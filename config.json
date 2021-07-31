@@ -1,0 +1,17 @@
+{
+    "node": [
+        {
+            "name": "node-a",
+            "address": "a.example.com",
+            "port": 443
+        },
+        {
+            "name": "node-b",
+            "address": "b.example.com",
+            "port": 443
+        }
+    ],
+    "inboundTag": "foo",
+    "flow": "xtls-rprx-direct",
+    "certificateFile": "/path/to/your/cert/cert.pem"
+}

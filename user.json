@@ -1,0 +1,12 @@
+[
+    {
+        "id": "18b43118-783a-4188-8897-6a524a77841e",
+        "level": 0,
+        "email": "foo@example.com"
+    },
+    {
+        "id": "c9446380-21bc-43b2-a351-08930fa0d568",
+        "level": 1,
+        "email": "bar@example.com"
+    }
+]
