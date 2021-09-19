@@ -16,10 +16,20 @@ type Configuration struct {
 	CertificateFile string `json:"certificateFile"`
 }
 
-type UserInfo []struct {
-	Email string `json:"email"`
-	Id    string `json:"id"`
-	Level uint32 `json:"level"`
+type Subscriptions []struct {
+	UserInfo struct {
+		ID    string `json:"id"`
+		Level uint32 `json:"level"`
+		Email string `json:"email"`
+	} `json:"userInfo"`
+	UserNodes []struct {
+		Name     string `json:"name"`
+		Protocol string `json:"protocol"`
+		Address  string `json:"address"`
+		Port     int    `json:"port"`
+		Security string `json:"security"`
+		Flow     string `json:"flow"`
+	} `json:"userNodes"`
 }
 
 func decodeConfiguration(filePath string) Configuration {
@@ -35,15 +45,15 @@ func decodeConfiguration(filePath string) Configuration {
 	return config
 }
 
-func decodeUserInfo(filePath string) UserInfo {
+func decodeSubscriptions(filePath string) Subscriptions {
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		panic(err)
 	}
-	var user UserInfo
-	err = json.Unmarshal([]byte(content), &user)
+	var sub Subscriptions
+	err = json.Unmarshal([]byte(content), &sub)
 	if err != nil {
 		panic(err)
 	}
-	return user
+	return sub
 }

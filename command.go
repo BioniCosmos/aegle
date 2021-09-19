@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"encoding/base64"
+)
 
 func add(configPath, nodeName, email, id string, level int) {
 	config := decodeConfiguration(configPath)
@@ -16,24 +19,41 @@ func rm(configPath, nodeName, email string) {
 
 func load(configPath, userInfoPath string) {
 	config := decodeConfiguration(configPath)
-	user := decodeUserInfo(userInfoPath)
-	for k := 0; k < len(config.Node); k++ {
-		for i := 0; i < len(user); i++ {
-			fmt.Printf("Add %s to %s: ", user[i].Email, config.Node[k].Name)
-			nodeAddress, nodePort := obtainNode(config.Node[k].Name, config)
-			addVlessUser(nodeAddress, nodePort, config.CertificateFile, config.InboundTag, user[i].Email, user[i].Id, config.Flow, user[i].Level)
+	sub := decodeSubscriptions(userInfoPath)
+	for k := 0; k < len(sub); k++ {
+		for i := 0; i < len(sub[k].UserNodes); i++ {
+			subUserNode := sub[k].UserNodes[i]
+			fmt.Printf("Add %s to %s: ", sub[k].UserInfo.Email, subUserNode.Name)
+			nodeAddress, nodePort := obtainNode(subUserNode.Name, config)
+			addVlessUser(nodeAddress, nodePort, config.CertificateFile, config.InboundTag, sub[k].UserInfo.Email, sub[k].UserInfo.ID, config.Flow, sub[k].UserInfo.Level)
 		}
 	}
 }
 
 func empty(configPath, userInfoPath string) {
 	config := decodeConfiguration(configPath)
-	user := decodeUserInfo(userInfoPath)
-	for k := 0; k < len(config.Node); k++ {
-		for i := 0; i < len(user); i++ {
-			fmt.Printf("Remove %s from %s: ", user[i].Email, config.Node[k].Name)
-			nodeAddress, nodePort := obtainNode(config.Node[k].Name, config)
-			removeUser(nodeAddress, nodePort, config.CertificateFile, config.InboundTag, user[i].Email)
+	sub := decodeSubscriptions(userInfoPath)
+	for k := 0; k < len(sub); k++ {
+		for i := 0; i < len(sub[k].UserNodes); i++ {
+			subUserNode := sub[k].UserNodes[i]
+			fmt.Printf("Remove %s from %s: ", sub[k].UserInfo.Email, subUserNode.Name)
+			nodeAddress, nodePort := obtainNode(subUserNode.Name, config)
+			removeUser(nodeAddress, nodePort, config.CertificateFile, config.InboundTag, sub[k].UserInfo.Email)
 		}
+	}
+}
+
+func sub(userInfoPath string) {
+	sub := decodeSubscriptions(userInfoPath)
+	var subLink string
+	for i := 0; i < len(sub); i++ {
+		for j := 0; j < len(sub[i].UserNodes); j++ {
+			subUserNode := sub[i].UserNodes[j]
+			subLink += generateSubLink(subUserNode.Name, subUserNode.Protocol, subUserNode.Address, sub[i].UserInfo.ID, subUserNode.Security, subUserNode.Flow, subUserNode.Port)
+			subLink += "\n"
+		}
+		encodedSubLink := base64.StdEncoding.EncodeToString([]byte(subLink))
+		createSubLinkFile(sub[i].UserInfo.ID[:7], encodedSubLink)
+		subLink = ""
 	}
 }

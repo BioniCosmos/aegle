@@ -1,12 +1,52 @@
 [
     {
-        "id": "18b43118-783a-4188-8897-6a524a77841e",
-        "level": 0,
-        "email": "foo@example.com"
+        "userInfo": {
+            "id": "18b43118-783a-4188-8897-6a524a77841e",
+            "level": 0,
+            "email": "foo@example.com"
+        },
+        "userNodes": [
+            {
+                "name": "node-a",
+                "protocol": "VLESS",
+                "address": "a.example.com",
+                "port": 443,
+                "security": "xtls",
+                "flow": "xtls-rprx-splice"
+            },
+            {
+                "name": "node-b",
+                "protocol": "VLESS",
+                "address": "b.example.com",
+                "port": 443,
+                "security": "xtls",
+                "flow": "xtls-rprx-splice"
+            }
+        ]
     },
     {
-        "id": "c9446380-21bc-43b2-a351-08930fa0d568",
-        "level": 1,
-        "email": "bar@example.com"
+        "userInfo": {
+            "id": "c9446380-21bc-43b2-a351-08930fa0d568",
+            "level": 1,
+            "email": "bar@example.com"
+        },
+        "userNodes": [
+            {
+                "name": "node-a",
+                "protocol": "VLESS",
+                "address": "a.example.com",
+                "port": 443,
+                "security": "xtls",
+                "flow": "xtls-rprx-splice"
+            },
+            {
+                "name": "node-b",
+                "protocol": "VLESS",
+                "address": "b.example.com",
+                "port": 443,
+                "security": "xtls",
+                "flow": "xtls-rprx-splice"
+            }
+        ]
     }
 ]

@@ -31,8 +31,13 @@ func main() {
 	emptyConfig := emptyCmd.String("config", "./config.json", "The path to the configuration file")
 	emptyUser := emptyCmd.String("user", "./user.json", "The path to user's information file")
 
+	// Flags for "sub"
+	subCmd := flag.NewFlagSet("sub", flag.ExitOnError)
+	subUser := subCmd.String("user", "./user.json", "The path to user's information file")
+
 	if len(os.Args) < 2 {
 		fmt.Println("No arguments specified")
+		fmt.Println("Enter submgr add/rm/load/empty/sub -h for detailed information.")
 		os.Exit(1)
 	}
 
@@ -49,8 +54,12 @@ func main() {
 	case "empty":
 		emptyCmd.Parse(os.Args[2:])
 		empty(*emptyConfig, *emptyUser)
+	case "sub":
+		subCmd.Parse(os.Args[2:])
+		sub(*subUser)
 	default:
 		fmt.Println("Wrong arguments")
+		fmt.Println("Enter submgr add/rm/load/empty/sub -h for detailed information.")
 		os.Exit(1)
 	}
 }
