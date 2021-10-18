@@ -53,7 +53,7 @@ func sub(userInfoPath string) {
 			subLink += "\n"
 		}
 		encodedSubLink := base64.StdEncoding.EncodeToString([]byte(subLink))
-		createSubLinkFile(sub[i].UserInfo.ID[:7], encodedSubLink)
+		createSubLinkFile(sub[i].UserInfo.ID[:8], encodedSubLink)
 		subLink = ""
 	}
 }
