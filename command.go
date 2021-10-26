@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"encoding/base64"
+	"fmt"
 )
 
 func add(configPath, nodeName, email, id string, level int) {
@@ -56,4 +56,20 @@ func sub(userInfoPath string) {
 		createSubLinkFile(sub[i].UserInfo.ID[:8], encodedSubLink)
 		subLink = ""
 	}
+}
+
+func server(userInfoPath, serverListen string) {
+	sub := decodeSubscriptions(userInfoPath)
+	subLinks := make(map[string]string)
+	for i := range sub {
+		var subLink string
+		for j := range sub[i].UserNodes {
+			subUserNode := sub[i].UserNodes[j]
+			subLink += generateSubLink(subUserNode.Name, subUserNode.Protocol, subUserNode.Address, sub[i].UserInfo.ID, subUserNode.Security, subUserNode.Flow, subUserNode.Port)
+			subLink += "\n"
+		}
+		encodedSubLink := base64.StdEncoding.EncodeToString([]byte(subLink))
+		subLinks[sub[i].UserInfo.ID[:8]] = encodedSubLink
+	}
+	serveSubscriptions(subLinks, serverListen)
 }

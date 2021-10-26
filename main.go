@@ -35,9 +35,14 @@ func main() {
 	subCmd := flag.NewFlagSet("sub", flag.ExitOnError)
 	subUser := subCmd.String("user", "./user.json", "The path to user's information file")
 
+	// Flags for "server"
+	serverCmd := flag.NewFlagSet("server", flag.ExitOnError)
+	serverUser := serverCmd.String("user", "./user.json", "The path to user's information file")
+	serverListen := serverCmd.String("listen", "127.0.0.1:8080", "The listening address and port")
+
 	if len(os.Args) < 2 {
 		fmt.Println("No arguments specified")
-		fmt.Println("Enter submgr add/rm/load/empty/sub -h for detailed information.")
+		fmt.Println("Enter submgr add/rm/load/empty/sub/server -h for detailed information.")
 		os.Exit(1)
 	}
 
@@ -57,9 +62,12 @@ func main() {
 	case "sub":
 		subCmd.Parse(os.Args[2:])
 		sub(*subUser)
+	case "server":
+		serverCmd.Parse(os.Args[2:])
+		server(*serverUser, *serverListen)
 	default:
 		fmt.Println("Wrong arguments")
-		fmt.Println("Enter submgr add/rm/load/empty/sub -h for detailed information.")
+		fmt.Println("Enter submgr add/rm/load/empty/sub/server -h for detailed information.")
 		os.Exit(1)
 	}
 }
