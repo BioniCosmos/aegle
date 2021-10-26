@@ -58,7 +58,7 @@ func sub(userInfoPath string) {
 	}
 }
 
-func server(userInfoPath, serverListen string) {
+func server(userInfoPath, serverListen, serverPath string) {
 	sub := decodeSubscriptions(userInfoPath)
 	subLinks := make(map[string]string)
 	for i := range sub {
@@ -71,5 +71,5 @@ func server(userInfoPath, serverListen string) {
 		encodedSubLink := base64.StdEncoding.EncodeToString([]byte(subLink))
 		subLinks[sub[i].UserInfo.ID[:8]] = encodedSubLink
 	}
-	serveSubscriptions(subLinks, serverListen)
+	serveSubscriptions(subLinks, serverListen, serverPath)
 }
