@@ -2,6 +2,7 @@ package models
 
 import (
     "context"
+    "errors"
 
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,22 +14,29 @@ type Node struct {
     Id         primitive.ObjectID `json:"id" bson:"_id"`
     Name       string             `json:"name"`
     APIAddress string             `json:"apiAddress" bson:"apiAddress"`
-    APIPort    int                `json:"apiPort" bson:"apiPort"`
 }
 
 var nodesColl *mongo.Collection
 
-func FindNode(id string) (Node, error) {
-    _id, err := primitive.ObjectIDFromHex(id)
-    if err != nil {
-        return Node{}, err
+func FindNode(id interface{}) (*Node, error) {
+    var _id primitive.ObjectID
+    switch id := id.(type) {
+    case string:
+        var err error
+        _id, err = primitive.ObjectIDFromHex(id)
+        if err != nil {
+            return nil, err
+        }
+    case primitive.ObjectID:
+        _id = id
+    default:
+        return nil, errors.New("invalid type for id")
     }
 
     var node Node
-    err = nodesColl.FindOne(context.TODO(), bson.D{
+    return &node, nodesColl.FindOne(context.TODO(), bson.D{
         {Key: "_id", Value: _id},
     }).Decode(&node)
-    return node, err
 }
 
 func FindNodes(skip int64, limit int64) ([]Node, error) {
@@ -40,8 +48,7 @@ func FindNodes(skip int64, limit int64) ([]Node, error) {
     }
 
     var nodes []Node
-    err = cursor.All(context.TODO(), &nodes)
-    return nodes, err
+    return nodes, cursor.All(context.TODO(), &nodes)
 }
 
 func (node *Node) Insert() error {

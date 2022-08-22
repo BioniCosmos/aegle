@@ -19,8 +19,7 @@ func Init() {
     if err != nil {
         log.Fatal(err)
     }
-    err = json.Unmarshal(file, &Conf)
-    if err != nil {
+    if err := json.Unmarshal(file, &Conf); err != nil {
         log.Fatal(err)
     }
     if Conf.DatabaseURL == "" {

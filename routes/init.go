@@ -1,70 +1,19 @@
 package routes
 
 import (
-    "github.com/bionicosmos/submgr/models"
+    "github.com/bionicosmos/submgr/handlers"
     "github.com/gofiber/fiber/v2"
-    "go.mongodb.org/mongo-driver/mongo"
 )
 
 func Init(app *fiber.App) {
-    app.Get("/api/node/:id", func(c *fiber.Ctx) error {
-        node, err := models.FindNode(c.Params("id"))
-        if err != nil {
-            if err == mongo.ErrNoDocuments {
-                return fiber.ErrNotFound
-            }
-            return err
-        }
-        return c.JSON(node)
-    })
-    app.Get("/api/nodes", func(c *fiber.Ctx) error {
-        var query struct {
-            skip  int64
-            limit int64
-        }
-        err := c.QueryParser(&query)
-        if err != nil {
-            return err
-        }
+    app.Get("/api/node/:id", handlers.FindNode)
+    app.Get("/api/nodes", handlers.FindNodes)
+    app.Post("/api/node", handlers.InsertNode)
+    app.Patch("/api/node/:id", handlers.UpdateNode)
+    app.Delete("/api/node/:id", handlers.DeleteNode)
 
-        nodes, err := models.FindNodes(query.skip, query.limit)
-        if err != nil {
-            return err
-        }
-        if nodes == nil {
-            return fiber.ErrNotFound
-        }
-        return c.JSON(nodes)
-    })
-    app.Post("/api/node", func(c *fiber.Ctx) error {
-        var node models.Node
-        err := c.BodyParser(&node)
-        if err != nil {
-            return err
-        }
-        err = node.Insert()
-        if err != nil {
-            return err
-        }
-        return c.SendStatus(fiber.StatusCreated)
-    })
-    app.Patch("/api/node/:id", func(c *fiber.Ctx) error {
-        var node models.Node
-        err := c.BodyParser(&node)
-        if err != nil {
-            return err
-        }
-        err = node.Update(c.Params("id"))
-        if err != nil {
-            return err
-        }
-        return c.SendStatus(fiber.StatusNoContent)
-    })
-    app.Delete("/api/node/:id", func(c *fiber.Ctx) error {
-        err := models.DeleteNode(c.Params("id"))
-        if err != nil {
-            return err
-        }
-        return c.SendStatus(fiber.StatusNoContent)
-    })
+    app.Get("/api/inbound/:id", handlers.FindInbound)
+    app.Get("/api/inbounds", handlers.FindInbounds)
+    app.Post("/api/inbound", handlers.InsertInbound)
+    app.Delete("/api/inbound/:id", handlers.DeleteInbound)
 }
