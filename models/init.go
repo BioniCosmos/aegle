@@ -18,5 +18,6 @@ func Init() {
     }
     db = client.Database("submgr")
     nodesColl = db.Collection("nodes")
-    inboundsColl = db.Collection("inbounds")
+    profilesColl = db.Collection("profiles")
+    usersColl = db.Collection("users")
 }

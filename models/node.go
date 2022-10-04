@@ -18,7 +18,7 @@ type Node struct {
 
 var nodesColl *mongo.Collection
 
-func FindNode(id interface{}) (*Node, error) {
+func FindNode(id any) (*Node, error) {
     var _id primitive.ObjectID
     switch id := id.(type) {
     case string:
@@ -62,15 +62,9 @@ func (node *Node) Update(id string) error {
     if err != nil {
         return err
     }
-    _, err = nodesColl.UpdateOne(
-        context.TODO(),
-        bson.D{
-            {Key: "_id", Value: _id},
-        },
-        bson.D{
-            {Key: "$set", Value: node},
-        },
-    )
+    _, err = nodesColl.UpdateByID(context.TODO(), _id, bson.D{
+        {Key: "$set", Value: node},
+    })
     return err
 }
 
@@ -84,34 +78,3 @@ func DeleteNode(id string) error {
     })
     return err
 }
-
-// func FindInboundsByTag(inboundTags ...string) ([]Inbound, error) {
-//     cursor, err := nodesColl.Aggregate(context.TODO(), mongo.Pipeline{
-//         {
-//             {Key: "$unwind", Value: "$inbounds"},
-//         },
-//         {
-//             {Key: "$match", Value: bson.D{
-//                 {Key: "inbounds.tag", Value: bson.D{
-//                     {Key: "$in", Value: inboundTags},
-//                 }},
-//             }},
-//         },
-//         {
-//             {Key: "$project", Value: bson.D{
-//                 {Key: "inbounds", Value: true},
-//                 {Key: "_id", Value: false},
-//             }},
-//         },
-//     })
-//     if err != nil {
-//         return nil, err
-//     }
-
-//     var inbounds []Inbound
-//     err = cursor.All(context.TODO(), &inbounds)
-//     if err != nil {
-//         return nil, err
-//     }
-//     return inbounds, nil
-// }
