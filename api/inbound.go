@@ -5,6 +5,7 @@ import (
     "fmt"
 
     "github.com/bionicosmos/submgr/models"
+    //lint:ignore SA1019 Needed by the upstream
     "github.com/golang/protobuf/proto"
     "github.com/xtls/xray-core/app/proxyman/command"
     "github.com/xtls/xray-core/common/protocol"
@@ -12,12 +13,9 @@ import (
     "github.com/xtls/xray-core/infra/conf"
     "github.com/xtls/xray-core/proxy/trojan"
     "github.com/xtls/xray-core/proxy/vless"
-    "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func AddInbound(inbound *conf.InboundDetourConfig, id primitive.ObjectID, apiAddress string) error {
-    inbound.Tag = id.Hex()
-
+func AddInbound(inbound *conf.InboundDetourConfig, apiAddress string) error {
     conn, ctx, cancelFunc, err := dialAPIServer(apiAddress)
     defer cancelFunc()
     if err != nil {
@@ -39,7 +37,7 @@ func AddInbound(inbound *conf.InboundDetourConfig, id primitive.ObjectID, apiAdd
     return conn.Close()
 }
 
-func RemoveInbound(id primitive.ObjectID, apiAddress string) error {
+func RemoveInbound(tag string, apiAddress string) error {
     conn, ctx, cancelFunc, err := dialAPIServer(apiAddress)
     defer cancelFunc()
     if err != nil {
@@ -48,7 +46,7 @@ func RemoveInbound(id primitive.ObjectID, apiAddress string) error {
 
     client := command.NewHandlerServiceClient(conn)
     req := command.RemoveInboundRequest{
-        Tag: id.Hex(),
+        Tag: tag,
     }
     if _, err := client.RemoveInbound(ctx, &req); err != nil {
         return err

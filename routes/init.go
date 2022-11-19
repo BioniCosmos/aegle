@@ -12,8 +12,8 @@ func Init(app *fiber.App) {
     app.Patch("/api/node/:id", handlers.UpdateNode)
     app.Delete("/api/node/:id", handlers.DeleteNode)
 
-    app.Get("/api/inbound/:id", handlers.FindInbound)
-    app.Get("/api/inbounds", handlers.FindInbounds)
-    app.Post("/api/inbound", handlers.InsertInbound)
-    app.Delete("/api/inbound/:id", handlers.DeleteInbound)
+    app.Get("/api/profile/:id", handlers.FindProfile)
+    app.Get("/api/profiles", handlers.FindProfiles)
+    app.Post("/api/profile", handlers.InsertProfile)
+    app.Delete("/api/profile/:id", handlers.DeleteProfile)
 }

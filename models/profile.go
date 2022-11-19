@@ -2,7 +2,9 @@ package models
 
 import (
     "context"
+    "encoding/json"
 
+    "github.com/xtls/xray-core/common/net"
     "github.com/xtls/xray-core/infra/conf"
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,9 +15,21 @@ import (
 type Profile struct {
     Id       primitive.ObjectID         `json:"id" bson:"_id"`
     Name     string                     `json:"name"`
-    Inbounds []conf.InboundDetourConfig `json:"inbounds"`
+    Inbounds []inboundDetourConfig      `json:"inbounds"`
     Outbound *conf.OutboundDetourConfig `json:"outbound"`
     NodeId   primitive.ObjectID         `json:"nodeId" bson:"nodeId"`
+}
+
+type inboundDetourConfig struct {
+    Protocol       string                              `json:"protocol"`
+    PortList       *conf.PortList                      `json:"port"`
+    ListenOn       string                              `json:"listen"`
+    Settings       *json.RawMessage                    `json:"settings"`
+    Tag            string                              `json:"tag"`
+    Allocation     *conf.InboundDetourAllocationConfig `json:"allocate"`
+    StreamSetting  *conf.StreamConfig                  `json:"streamSettings"`
+    DomainOverride *conf.StringList                    `json:"domainOverride"`
+    SniffingConfig *conf.SniffingConfig                `json:"sniffing"`
 }
 
 var profilesColl *mongo.Collection
@@ -56,4 +70,20 @@ func DeleteProfile(id string) error {
         {Key: "_id", Value: _id},
     })
     return err
+}
+
+func (inbound *inboundDetourConfig) ToConf() *conf.InboundDetourConfig {
+    listenOn := new(conf.Address)
+    listenOn.Address = net.ParseAddress(inbound.ListenOn)
+    return &conf.InboundDetourConfig{
+        Protocol:       inbound.Protocol,
+        PortList:       inbound.PortList,
+        ListenOn:       listenOn,
+        Settings:       inbound.Settings,
+        Tag:            inbound.Tag,
+        Allocation:     inbound.Allocation,
+        StreamSetting:  inbound.StreamSetting,
+        DomainOverride: inbound.DomainOverride,
+        SniffingConfig: inbound.SniffingConfig,
+    }
 }
