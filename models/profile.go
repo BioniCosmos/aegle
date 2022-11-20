@@ -74,6 +74,9 @@ func DeleteProfile(id string) error {
 
 func (inbound *inboundDetourConfig) ToConf() *conf.InboundDetourConfig {
     listenOn := new(conf.Address)
+    if inbound.ListenOn == "" {
+        inbound.ListenOn = "0.0.0.0"
+    }
     listenOn.Address = net.ParseAddress(inbound.ListenOn)
     return &conf.InboundDetourConfig{
         Protocol:       inbound.Protocol,
