@@ -9,7 +9,7 @@ func Init(app *fiber.App) {
     app.Get("/api/node/:id", handlers.FindNode)
     app.Get("/api/nodes", handlers.FindNodes)
     app.Post("/api/node", handlers.InsertNode)
-    app.Patch("/api/node/:id", handlers.UpdateNode)
+    app.Put("/api/node", handlers.UpdateNode)
     app.Delete("/api/node/:id", handlers.DeleteNode)
 
     app.Get("/api/profile/:id", handlers.FindProfile)

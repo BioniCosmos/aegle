@@ -57,12 +57,8 @@ func (node *Node) Insert() error {
     return err
 }
 
-func (node *Node) Update(id string) error {
-    _id, err := primitive.ObjectIDFromHex(id)
-    if err != nil {
-        return err
-    }
-    _, err = nodesColl.UpdateByID(context.TODO(), _id, bson.D{
+func (node *Node) Update() error {
+    _, err := nodesColl.UpdateByID(context.TODO(), node.Id, bson.D{
         {Key: "$set", Value: node},
     })
     return err

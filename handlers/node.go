@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"github.com/bionicosmos/submgr/models"
-	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+    "github.com/bionicosmos/submgr/models"
+    "github.com/gofiber/fiber/v2"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/mongo"
 )
 
 func FindNode(c *fiber.Ctx) error {
@@ -54,7 +54,7 @@ func UpdateNode(c *fiber.Ctx) error {
     if err := c.BodyParser(&node); err != nil {
         return fiber.NewError(fiber.StatusBadRequest, err.Error())
     }
-    if err := node.Update(c.Params("id")); err != nil {
+    if err := node.Update(); err != nil {
         return err
     }
     return c.SendStatus(fiber.StatusNoContent)
