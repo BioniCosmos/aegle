@@ -18,7 +18,7 @@ import (
 )
 
 type User struct {
-    Id       primitive.ObjectID            `json:"id"`
+    Id       primitive.ObjectID            `json:"id" bson:"_id"`
     Name     string                        `json:"name"`
     Email    string                        `json:"email"`
     Level    uint32                        `json:"level"`
@@ -51,17 +51,23 @@ func FindUsers(filter any, sort any, skip int64, limit int64) ([]User, error) {
 }
 
 func (user *User) Insert() error {
+    user.Id = primitive.NewObjectID()
     _, err := usersColl.InsertOne(context.TODO(), user)
     return err
 }
 
-func (user *User) Update(id string) error {
-    _id, err := primitive.ObjectIDFromHex(id)
-    if err != nil {
-        return err
-    }
-    _, err = usersColl.UpdateByID(context.TODO(), _id, bson.D{
+func (user *User) Update() error {
+    _, err := usersColl.UpdateByID(context.TODO(), user.Id, bson.D{
         {Key: "$set", Value: user},
+    })
+    return err
+}
+
+func (user *User) RemoveProfile(profileId string) error {
+    _, err := usersColl.UpdateByID(context.TODO(), user.Id, bson.D{
+        {Key: "$unset", Value: bson.D{
+            {Key: "profiles." + profileId, Value: ""},
+        }},
     })
     return err
 }
@@ -82,8 +88,11 @@ func (user *User) GenerateSubscription(profile *Profile) (string, error) {
     var query url.Values
     outbound := profile.Outbound
     stream := outbound.StreamSetting
+    if stream == nil {
+        stream = new(conf.StreamConfig)
+    }
 
-    if string(*stream.Network) != "" && string(*stream.Network) != "tcp" {
+    if stream.Network != nil && string(*stream.Network) != "" && string(*stream.Network) != "tcp" {
         network, err := stream.Network.Build()
         if err != nil {
             return "", nil

@@ -16,4 +16,10 @@ func Init(app *fiber.App) {
     app.Get("/api/profiles", handlers.FindProfiles)
     app.Post("/api/profile", handlers.InsertProfile)
     app.Delete("/api/profile/:id", handlers.DeleteProfile)
+
+    app.Get("/api/user/:id", handlers.FindUser)
+    app.Get("/api/users", handlers.FindUsers)
+    app.Post("/api/user", handlers.InsertUser)
+    app.Patch("/api/user/:id", handlers.UpdateUser)
+    app.Delete("/api/user/:id", handlers.DeleteUser)
 }

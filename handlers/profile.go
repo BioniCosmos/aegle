@@ -68,7 +68,7 @@ func InsertProfile(c *fiber.Ctx) error {
         return err
     }
     for i := range profile.Inbounds {
-        profile.Inbounds[i].Tag = fmt.Sprintf("%v-%v", profile.Id, i)
+        profile.Inbounds[i].Tag = fmt.Sprintf("%v-%v", profile.Id.Hex(), i)
         if err := api.AddInbound(profile.Inbounds[i].ToConf(), node.APIAddress); err != nil {
             return err
         }
