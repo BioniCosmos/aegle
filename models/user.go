@@ -7,6 +7,7 @@ import (
     "fmt"
     "net/url"
     "strings"
+    "time"
 
     "github.com/xtls/xray-core/infra/conf"
     "github.com/xtls/xray-core/proxy/trojan"
@@ -18,12 +19,13 @@ import (
 )
 
 type User struct {
-    Id       primitive.ObjectID            `json:"id" bson:"_id"`
-    Name     string                        `json:"name"`
-    Email    string                        `json:"email"`
-    Level    uint32                        `json:"level"`
-    Account  map[string]json.RawMessage    `json:"account"`
-    Profiles map[primitive.ObjectID]string `json:"profiles"`
+    Id          primitive.ObjectID            `json:"id" bson:"_id"`
+    Name        string                        `json:"name"`
+    Email       string                        `json:"email"`
+    Level       uint32                        `json:"level"`
+    BillingDate *time.Time                    `json:"billingDate" bson:"billingDate"`
+    Account     map[string]json.RawMessage    `json:"account"`
+    Profiles    map[primitive.ObjectID]string `json:"profiles"`
 }
 
 var usersColl *mongo.Collection

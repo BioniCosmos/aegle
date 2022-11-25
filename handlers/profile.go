@@ -27,17 +27,36 @@ func FindProfiles(c *fiber.Ctx) error {
         Skip   int64              `query:"skip"`
         Limit  int64              `query:"limit"`
         NodeId primitive.ObjectID `query:"nodeId"`
+        UserId primitive.ObjectID `query:"userId"`
     }
     if err := c.QueryParser(&query); err != nil {
         return fiber.NewError(fiber.StatusBadRequest, err.Error())
     }
 
-    var filter bson.E
+    var nodeIdFilter bson.E
     if !query.NodeId.IsZero() {
-        filter = bson.E{Key: "nodeId", Value: query.NodeId}
+        nodeIdFilter = bson.E{Key: "nodeId", Value: query.NodeId}
+    }
+    var userIdFilter bson.E
+    if !query.UserId.IsZero() {
+        user, err := models.FindUser(query.UserId.Hex())
+        if err != nil {
+            if err == mongo.ErrNoDocuments {
+                return fiber.NewError(fiber.StatusBadRequest, "user not found")
+            }
+            return err
+        }
+        profileIds := make(bson.A, 0, len(user.Profiles))
+        for profileId := range user.Profiles {
+            profileIds = append(profileIds, profileId)
+        }
+        userIdFilter = bson.E{Key: "_id", Value: bson.D{
+            {Key: "$in", Value: profileIds},
+        }}
     }
     profiles, err := models.FindProfiles(bson.D{
-        filter,
+        nodeIdFilter,
+        userIdFilter,
     }, bson.D{
         {Key: "name", Value: 1},
     }, query.Skip, query.Limit)
