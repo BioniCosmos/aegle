@@ -65,10 +65,8 @@ func InsertUser(c *fiber.Ctx) error {
             }
             return err
         }
-        for _, inbound := range profile.Inbounds {
-            if err := api.AddUser(inbound.ToConf(), &user, node.APIAddress); err != nil {
-                return err
-            }
+        if err := api.AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
+            return err
         }
         user.Profiles[profileId], err = user.GenerateSubscription(profile)
         if err != nil {
@@ -116,25 +114,23 @@ func UpdateUser(c *fiber.Ctx) error {
         }
         return err
     }
-    for _, inbound := range profile.Inbounds {
-        if body.Operation == operation(Add) {
-            if err := api.AddUser(inbound.ToConf(), user, node.APIAddress); err != nil {
-                return err
-            }
-            user.Profiles[body.Id], err = user.GenerateSubscription(profile)
-            if err != nil {
-                return fiber.NewError(fiber.StatusBadRequest, err.Error())
-            }
-            if err := user.Update(); err != nil {
-                return err
-            }
-        } else {
-            if err := api.RemoveUser(inbound.ToConf(), user, node.APIAddress); err != nil {
-                return err
-            }
-            if err := user.RemoveProfile(body.Id.Hex()); err != nil {
-                return err
-            }
+    if body.Operation == operation(Add) {
+        if err := api.AddUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
+            return err
+        }
+        user.Profiles[body.Id], err = user.GenerateSubscription(profile)
+        if err != nil {
+            return fiber.NewError(fiber.StatusBadRequest, err.Error())
+        }
+        if err := user.Update(); err != nil {
+            return err
+        }
+    } else {
+        if err := api.RemoveUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
+            return err
+        }
+        if err := user.RemoveProfile(body.Id.Hex()); err != nil {
+            return err
         }
     }
     return c.SendStatus(fiber.StatusNoContent)
@@ -165,10 +161,8 @@ func DeleteUser(c *fiber.Ctx) error {
             }
             return err
         }
-        for _, inbound := range profile.Inbounds {
-            if err := api.RemoveUser(inbound.ToConf(), user, node.APIAddress); err != nil {
-                return err
-            }
+        if err := api.RemoveUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
+            return err
         }
     }
     if err := models.DeleteUser(id); err != nil {

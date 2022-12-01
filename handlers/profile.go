@@ -86,11 +86,9 @@ func InsertProfile(c *fiber.Ctx) error {
         }
         return err
     }
-    for i := range profile.Inbounds {
-        profile.Inbounds[i].Tag = fmt.Sprintf("%v-%v", profile.Id.Hex(), i)
-        if err := api.AddInbound(profile.Inbounds[i].ToConf(), node.APIAddress); err != nil {
-            return err
-        }
+    profile.Inbound.Tag = profile.Id.Hex()
+    if err := api.AddInbound(profile.Inbound.ToConf(), node.APIAddress); err != nil {
+        return err
     }
     if err := profile.Insert(); err != nil {
         return err
@@ -125,10 +123,8 @@ func DeleteProfile(c *fiber.Ctx) error {
         }
         return err
     }
-    for _, inbound := range profile.Inbounds {
-        if err := api.RemoveInbound(inbound.Tag, node.APIAddress); err != nil {
-            return err
-        }
+    if err := api.RemoveInbound(profile.Inbound.Tag, node.APIAddress); err != nil {
+        return err
     }
     if err := models.DeleteProfile(id); err != nil {
         return err
