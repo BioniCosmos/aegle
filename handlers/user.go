@@ -1,15 +1,17 @@
 package handlers
 
 import (
-    "encoding/base64"
-    "strings"
+	"encoding/base64"
+	"errors"
+	"strings"
 
-    "github.com/bionicosmos/submgr/api"
-    "github.com/bionicosmos/submgr/models"
-    "github.com/gofiber/fiber/v2"
-    "go.mongodb.org/mongo-driver/bson"
-    "go.mongodb.org/mongo-driver/bson/primitive"
-    "go.mongodb.org/mongo-driver/mongo"
+	"github.com/bionicosmos/submgr/api"
+	"github.com/bionicosmos/submgr/models"
+	"github.com/bionicosmos/submgr/services"
+	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func FindUser(c *fiber.Ctx) error {
@@ -68,7 +70,7 @@ func InsertUser(c *fiber.Ctx) error {
         if err := api.AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
             return err
         }
-        user.Profiles[profileId], err = user.GenerateSubscription(profile)
+        user.Profiles[profileId], err = services.GenerateSubscription(&user, profile)
         if err != nil {
             return fiber.NewError(fiber.StatusBadRequest, err.Error())
         }
@@ -107,29 +109,21 @@ func UpdateUser(c *fiber.Ctx) error {
         }
         return err
     }
-    node, err := models.FindNode(profile.NodeId)
-    if err != nil {
-        if err == mongo.ErrNoDocuments {
-            return fiber.NewError(fiber.StatusBadRequest, "node not found")
-        }
-        return err
-    }
     if body.Operation == operation(Add) {
-        if err := api.AddUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
-            return err
-        }
-        user.Profiles[body.Id], err = user.GenerateSubscription(profile)
-        if err != nil {
-            return fiber.NewError(fiber.StatusBadRequest, err.Error())
-        }
-        if err := user.Update(); err != nil {
+        if err := services.UserAddProfile(user, profile); err != nil {
+            if err == mongo.ErrNoDocuments {
+                return fiber.NewError(fiber.StatusBadRequest, "node not found")
+            }
+            if errors.As(err, services.SubscriptionError) {
+                return fiber.NewError(fiber.StatusBadRequest, err.Error())
+            }
             return err
         }
     } else {
-        if err := api.RemoveUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
-            return err
-        }
-        if err := user.RemoveProfile(body.Id.Hex()); err != nil {
+        if err := services.UserRemoveProfile(user, profile); err != nil {
+            if err == mongo.ErrNoDocuments {
+                return fiber.NewError(fiber.StatusBadRequest, "node not found")
+            }
             return err
         }
     }

@@ -4,6 +4,7 @@ import (
     "log"
 
     "github.com/bionicosmos/submgr/config"
+    "github.com/bionicosmos/submgr/cron"
     "github.com/bionicosmos/submgr/models"
     "github.com/bionicosmos/submgr/routes"
     "github.com/gofiber/fiber/v2"
@@ -13,6 +14,7 @@ import (
 func main() {
     config.Init()
     models.Init()
+    cron.Init()
 
     app := fiber.New()
     app.Use(logger.New())

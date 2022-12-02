@@ -3,6 +3,7 @@ module github.com/bionicosmos/submgr
 go 1.19
 
 require (
+	github.com/go-co-op/gocron v1.18.0
 	github.com/gofiber/fiber/v2 v2.40.1
 	github.com/golang/protobuf v1.5.2
 	github.com/xtls/xray-core v1.6.4
@@ -34,6 +35,7 @@ require (
 	github.com/refraction-networking/utls v1.2.0 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sagernet/sing v0.0.0-20220801112236-1bb95f9661fc // indirect
 	github.com/sagernet/sing-shadowsocks v0.0.0-20220801112336-a91eacdd01e1 // indirect
 	github.com/seiflotfy/cuckoofilter v0.0.0-20220411075957-e3b120b3f5fb // indirect
