@@ -3,6 +3,7 @@ package config
 import (
     "encoding/json"
     "errors"
+    "flag"
     "log"
     "os"
 )
@@ -10,12 +11,19 @@ import (
 type config struct {
     Listen      string `json:"listen"`
     DatabaseURL string `json:"databaseURL"`
+    Cert        string `json:"cert"`
+    Static      struct {
+        Home      string `json:"home"`
+        Dashboard string `json:"dashboard"`
+    }   `json:"static"`
 }
 
 var Conf config
 
 func Init() {
-    file, err := os.ReadFile("./config.json")
+    configFlag := flag.String("config", "./config.json", "the configuration file")
+    flag.Parse()
+    file, err := os.ReadFile(*configFlag)
     if err != nil {
         log.Fatal(err)
     }

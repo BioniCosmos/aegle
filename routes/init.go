@@ -1,11 +1,20 @@
 package routes
 
 import (
+    "path"
+
+    "github.com/bionicosmos/submgr/config"
     "github.com/bionicosmos/submgr/handlers"
     "github.com/gofiber/fiber/v2"
 )
 
 func Init(app *fiber.App) {
+    app.Static("/", config.Conf.Static.Home)
+    app.Static("/dashboard/", config.Conf.Static.Dashboard)
+    app.Use("/dashboard/", func(c *fiber.Ctx) error {
+        return c.SendFile(path.Join(config.Conf.Static.Dashboard, "index.html"))
+    })
+
     app.Get("/api/node/:id", handlers.FindNode)
     app.Get("/api/nodes", handlers.FindNodes)
     app.Post("/api/node", handlers.InsertNode)

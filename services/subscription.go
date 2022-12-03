@@ -17,28 +17,31 @@ type subscriptionError struct {
     message error
 }
 
-func (err subscriptionError) Error() string {
+func (err *subscriptionError) Error() string {
     return fmt.Sprintf("failed to generate subscription: %v", err.message)
 }
 
-func (err subscriptionError) Unwrap() error {
+func (err *subscriptionError) Unwrap() error {
     return err.message
 }
 
 func subscriptionErrorNew(err string) error {
-    return subscriptionError{errors.New(err)}
+    return &subscriptionError{errors.New(err)}
 }
 
 func subscriptionErrorWrap(err error) error {
-    return subscriptionError{err}
+    return &subscriptionError{err}
 }
 
 var SubscriptionError *subscriptionError
 
 func GenerateSubscription(user *models.User, profile *models.Profile) (string, error) {
     var u url.URL
-    var query url.Values
+    query := make(url.Values)
     outbound := profile.Outbound
+    if outbound == nil {
+        return "", subscriptionErrorNew("outbound not found")
+    }
     stream := outbound.StreamSetting
     if stream == nil {
         stream = new(conf.StreamConfig)
@@ -49,61 +52,78 @@ func GenerateSubscription(user *models.User, profile *models.Profile) (string, e
         if err != nil {
             return "", nil
         }
-        query.Set("type", network)
+        switch network {
+        case "mkcp":
+            query.Set("type", "kcp")
+        case "websocket":
+            query.Set("type", "ws")
+        default:
+            query.Set("type", network)
+        }
         switch network {
         case "http":
-            query.Set("path", func() string {
-                if path := stream.HTTPSettings.Path; path != "" {
-                    return path
+            if stream.HTTPSettings != nil {
+                query.Set("path", func() string {
+                    if path := stream.HTTPSettings.Path; path != "" {
+                        return path
+                    }
+                    return "/"
+                }())
+                if host := stream.HTTPSettings.Host; host != nil {
+                    query.Set("host", strings.Join(*host, ","))
                 }
-                return "/"
-            }())
-            if host := stream.HTTPSettings.Host; host != nil {
-                query.Set("host", strings.Join(*host, ","))
             }
         case "websocket":
-            query.Set("path", func() string {
-                if path := stream.WSSettings.Path; path != "" {
-                    return path
+            if stream.WSSettings != nil {
+                query.Set("path", func() string {
+                    if path := stream.WSSettings.Path; path != "" {
+                        return path
+                    }
+                    return "/"
+                }())
+                if host := stream.WSSettings.Headers["Host"]; host != "" {
+                    query.Set("host", host)
                 }
-                return "/"
-            }())
-            if host := stream.WSSettings.Headers["Host"]; host != "" {
-                query.Set("host", host)
             }
         case "mkcp":
-            var header map[string]string
-            if err := json.Unmarshal(stream.KCPSettings.HeaderConfig, &header); err != nil {
-                return "", subscriptionErrorWrap(err)
-            }
-            if headerType := header["type"]; headerType != "" {
-                query.Set("headerType", headerType)
-            }
-            if seed := stream.KCPSettings.Seed; seed != nil {
-                query.Set("seed", *seed)
+            if stream.KCPSettings != nil {
+                header := make(map[string]string)
+                if err := json.Unmarshal(stream.KCPSettings.HeaderConfig, &header); err != nil {
+                    return "", subscriptionErrorWrap(err)
+                }
+                if headerType := header["type"]; headerType != "" {
+                    query.Set("headerType", headerType)
+                }
+                if seed := stream.KCPSettings.Seed; seed != nil {
+                    query.Set("seed", *seed)
+                }
             }
         case "quic":
-            var header map[string]string
-            if err := json.Unmarshal(stream.QUICSettings.Header, &header); err != nil {
-                return "", subscriptionErrorWrap(err)
-            }
-            if headerType := header["type"]; headerType != "" {
-                query.Set("headerType", headerType)
-            }
-            if quicSecurity := stream.QUICSettings.Security; quicSecurity != "" {
-                query.Set("quicSecurity", quicSecurity)
-                if key := stream.QUICSettings.Key; key != "" {
-                    query.Set("key", key)
-                } else {
-                    return "", subscriptionErrorNew("key for QUIC not specified")
+            if stream.QUICSettings != nil {
+                header := make(map[string]string)
+                if err := json.Unmarshal(stream.QUICSettings.Header, &header); err != nil {
+                    return "", subscriptionErrorWrap(err)
+                }
+                if headerType := header["type"]; headerType != "" {
+                    query.Set("headerType", headerType)
+                }
+                if quicSecurity := stream.QUICSettings.Security; quicSecurity != "" {
+                    query.Set("quicSecurity", quicSecurity)
+                    if key := stream.QUICSettings.Key; key != "" {
+                        query.Set("key", key)
+                    } else {
+                        return "", subscriptionErrorNew("key for QUIC not specified")
+                    }
                 }
             }
         case "grpc":
-            if serviceName := stream.GRPCConfig.ServiceName; serviceName != "" {
-                query.Set("serviceName", serviceName)
-            }
-            if stream.GRPCConfig.MultiMode {
-                query.Set("mode", "multi")
+            if stream.GRPCConfig != nil {
+                if serviceName := stream.GRPCConfig.ServiceName; serviceName != "" {
+                    query.Set("serviceName", serviceName)
+                }
+                if stream.GRPCConfig.MultiMode {
+                    query.Set("mode", "multi")
+                }
             }
         }
     }
@@ -112,11 +132,15 @@ func GenerateSubscription(user *models.User, profile *models.Profile) (string, e
         query.Set("security", security)
         switch security {
         case "tls":
-            query.Set("sni", stream.TLSSettings.ServerName)
-            query.Set("alpn", strings.Join(*stream.TLSSettings.ALPN, ","))
+            if stream.TLSSettings != nil {
+                query.Set("sni", stream.TLSSettings.ServerName)
+                query.Set("alpn", strings.Join(*stream.TLSSettings.ALPN, ","))
+            }
         case "xtls":
-            query.Set("sni", stream.XTLSSettings.ServerName)
-            query.Set("alpn", strings.Join(*stream.XTLSSettings.ALPN, ","))
+            if stream.XTLSSettings != nil {
+                query.Set("sni", stream.XTLSSettings.ServerName)
+                query.Set("alpn", strings.Join(*stream.XTLSSettings.ALPN, ","))
+            }
         default:
             return "", subscriptionErrorNew("unknown security type")
         }
@@ -124,7 +148,10 @@ func GenerateSubscription(user *models.User, profile *models.Profile) (string, e
 
     proto := strings.ToLower(outbound.Protocol)
     u.Scheme = proto
-    u.Fragment = outbound.Tag
+    u.Fragment = profile.Name
+    if outbound.Settings == nil {
+        return "", subscriptionErrorNew("no `Outbound.Settings` specified")
+    }
     switch proto {
     case "vless":
         var settings conf.VLessOutboundConfig
@@ -133,6 +160,9 @@ func GenerateSubscription(user *models.User, profile *models.Profile) (string, e
         }
 
         vnext := settings.Vnext[0]
+        if vnext == nil {
+            return "", subscriptionErrorNew("no address or port specified")
+        }
         u.Host = fmt.Sprintf("%v:%v", vnext.Address, vnext.Port)
 
         var account vless.Account
@@ -157,6 +187,9 @@ func GenerateSubscription(user *models.User, profile *models.Profile) (string, e
         }
 
         vnext := settings.Receivers[0]
+        if vnext == nil {
+            return "", subscriptionErrorNew("no address or port specified")
+        }
         u.Host = fmt.Sprintf("%v:%v", vnext.Address, vnext.Port)
 
         var account conf.VMessAccount
@@ -174,6 +207,9 @@ func GenerateSubscription(user *models.User, profile *models.Profile) (string, e
         }
 
         server := settings.Servers[0]
+        if server == nil {
+            return "", subscriptionErrorNew("no address or port specified")
+        }
         u.Host = fmt.Sprintf("%v:%v", server.Address, server.Port)
 
         var account trojan.Account

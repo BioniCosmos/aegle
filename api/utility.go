@@ -3,8 +3,10 @@ package api
 import (
     "context"
     "errors"
+    "log"
     "time"
 
+    "github.com/bionicosmos/submgr/config"
     "github.com/bionicosmos/submgr/models"
     "go.mongodb.org/mongo-driver/bson"
     "google.golang.org/grpc"
@@ -12,9 +14,9 @@ import (
 )
 
 func dialAPIServer(apiAddress string) (*grpc.ClientConn, context.Context, context.CancelFunc, error) {
-    cred, err := credentials.NewClientTLSFromFile("./cert.pem", "")
+    cred, err := credentials.NewClientTLSFromFile(config.Conf.Cert, "")
     if err != nil {
-        return nil, nil, nil, err
+        return nil, nil, nil, errors.New("failed to read the certificate file")
     }
     ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
     conn, err := grpc.DialContext(
@@ -39,7 +41,7 @@ func CheckAllInbounds() error {
             return err
         }
         if err := AddInbound(profile.Inbound.ToConf(), node.APIAddress); err != nil {
-            return err
+            log.Print(err)
         }
     }
     return nil
@@ -61,7 +63,7 @@ func CheckAllUsers() error {
                 return err
             }
             if err := AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
-                return err
+                log.Print(err)
             }
         }
     }

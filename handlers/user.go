@@ -1,17 +1,17 @@
 package handlers
 
 import (
-	"encoding/base64"
-	"errors"
-	"strings"
+    "encoding/base64"
+    "errors"
+    "strings"
 
-	"github.com/bionicosmos/submgr/api"
-	"github.com/bionicosmos/submgr/models"
-	"github.com/bionicosmos/submgr/services"
-	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+    "github.com/bionicosmos/submgr/api"
+    "github.com/bionicosmos/submgr/models"
+    "github.com/bionicosmos/submgr/services"
+    "github.com/gofiber/fiber/v2"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/mongo"
 )
 
 func FindUser(c *fiber.Ctx) error {
@@ -114,7 +114,7 @@ func UpdateUser(c *fiber.Ctx) error {
             if err == mongo.ErrNoDocuments {
                 return fiber.NewError(fiber.StatusBadRequest, "node not found")
             }
-            if errors.As(err, services.SubscriptionError) {
+            if errors.As(err, &services.SubscriptionError) {
                 return fiber.NewError(fiber.StatusBadRequest, err.Error())
             }
             return err
