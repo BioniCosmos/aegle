@@ -12,7 +12,7 @@ import (
 func CheckUserBill() error {
     users, err := models.FindUsers(bson.D{
         {Key: "billingDate", Value: bson.D{
-            {Key: "$lt", Value: time.Now()},
+            {Key: "$lte", Value: time.Now().AddDate(0, -1, 0)},
         }},
     }, bson.D{}, 0, 0)
     if err != nil {
