@@ -17,7 +17,7 @@ type invoice struct {
     IsPaid          bool               `json:"isPaid"`
 }
 
-func UserInvoice(c *fiber.Ctx) error {
+func FindUserInvoice(c *fiber.Ctx) error {
     id := c.Params("id")
     user, err := models.FindUser(id)
     if err != nil {
@@ -29,7 +29,7 @@ func UserInvoice(c *fiber.Ctx) error {
     return c.JSON(invoiceFromUser(user))
 }
 
-func UserInvoices(c *fiber.Ctx) error {
+func FindUserInvoices(c *fiber.Ctx) error {
     var query struct {
         Skip  int64 `query:"skip"`
         Limit int64 `query:"limit"`
@@ -63,13 +63,16 @@ func ExtendBillingDate(c *fiber.Ctx) error {
     }
     user, err := models.FindUser(id)
     if err != nil {
+        if err == mongo.ErrNoDocuments {
+            return fiber.ErrNotFound
+        }
         return err
     }
     user.BillingDate = body.BillingDate
     if err := user.Update(); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusNoContent)
+    return c.JSON(fiber.NewError(fiber.StatusOK))
 }
 
 func invoiceFromUser(user *models.User) *invoice {

@@ -42,7 +42,7 @@ func FindProfiles(c *fiber.Ctx) error {
         user, err := models.FindUser(query.UserId.Hex())
         if err != nil {
             if err == mongo.ErrNoDocuments {
-                return fiber.NewError(fiber.StatusBadRequest, "user not found")
+                return fiber.NewError(fiber.StatusNotFound, "user not found")
             }
             return err
         }
@@ -82,7 +82,7 @@ func InsertProfile(c *fiber.Ctx) error {
     node, err := models.FindNode(profile.NodeId)
     if err != nil {
         if err == mongo.ErrNoDocuments {
-            return fiber.NewError(fiber.StatusBadRequest, "node not found")
+            return fiber.NewError(fiber.StatusUnprocessableEntity, "node not found")
         }
         return err
     }
@@ -93,7 +93,7 @@ func InsertProfile(c *fiber.Ctx) error {
     if err := profile.Insert(); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusCreated)
+    return c.JSON(fiber.NewError(fiber.StatusCreated))
 }
 
 func DeleteProfile(c *fiber.Ctx) error {
@@ -105,22 +105,19 @@ func DeleteProfile(c *fiber.Ctx) error {
     }, bson.D{}, 0, 0); err != nil {
         return err
     } else if users != nil {
-        return fiber.NewError(fiber.StatusBadRequest, "Users binding to the profile are not empty.")
+        return fiber.NewError(fiber.StatusConflict, "Users binding to the profile are not empty.")
     }
 
     profile, err := models.FindProfile(id)
     if err != nil {
         if err == mongo.ErrNoDocuments {
-            return fiber.NewError(fiber.StatusBadRequest, "profile not found")
+            return fiber.NewError(fiber.StatusNotFound, "profile not found")
         }
         return err
     }
 
     node, err := models.FindNode(profile.NodeId)
     if err != nil {
-        if err == mongo.ErrNoDocuments {
-            return fiber.NewError(fiber.StatusBadRequest, "node not found")
-        }
         return err
     }
     if err := api.RemoveInbound(profile.Inbound.Tag, node.APIAddress); err != nil {
@@ -129,5 +126,5 @@ func DeleteProfile(c *fiber.Ctx) error {
     if err := models.DeleteProfile(id); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusNoContent)
+    return c.JSON(fiber.NewError(fiber.StatusOK))
 }

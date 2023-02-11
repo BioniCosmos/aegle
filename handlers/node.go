@@ -46,7 +46,7 @@ func InsertNode(c *fiber.Ctx) error {
     if err := node.Insert(); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusCreated)
+    return c.JSON(fiber.NewError(fiber.StatusCreated))
 }
 
 func UpdateNode(c *fiber.Ctx) error {
@@ -57,7 +57,7 @@ func UpdateNode(c *fiber.Ctx) error {
     if err := node.Update(); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusNoContent)
+    return c.JSON(fiber.NewError(fiber.StatusOK))
 }
 
 func DeleteNode(c *fiber.Ctx) error {
@@ -76,10 +76,10 @@ func DeleteNode(c *fiber.Ctx) error {
         return err
     }
     if profiles != nil {
-        return fiber.NewError(fiber.StatusBadRequest, "Profiles binding to the node are not empty.")
+        return fiber.NewError(fiber.StatusConflict, "Profiles binding to the node are not empty.")
     }
     if err := models.DeleteNode(c.Params("id")); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusNoContent)
+    return c.JSON(fiber.NewError(fiber.StatusOK))
 }

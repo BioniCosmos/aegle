@@ -15,6 +15,8 @@ func Init(app *fiber.App) {
         return c.SendFile(path.Join(config.Conf.Static.Dashboard, "index.html"))
     })
 
+    app.Use("/api", handlers.AuthorizeAccount)
+
     app.Get("/api/node/:id", handlers.FindNode)
     app.Get("/api/nodes", handlers.FindNodes)
     app.Post("/api/node", handlers.InsertNode)
@@ -33,7 +35,12 @@ func Init(app *fiber.App) {
     app.Delete("/api/user/:id", handlers.DeleteUser)
     app.Get("/api/user/:id/sub", handlers.FindUserSubscription)
 
-    app.Get("/api/invoice/:id", handlers.UserInvoice)
-    app.Get("/api/invoices", handlers.UserInvoices)
+    app.Get("/api/invoice/:id", handlers.FindUserInvoice)
+    app.Get("/api/invoices", handlers.FindUserInvoices)
     app.Patch("/api/invoice/:id", handlers.ExtendBillingDate)
+
+    app.Post("/api/account/sign-in", handlers.SignInAccount)
+    app.Post("/api/account/sign-up", handlers.SignUpAccount)
+    app.Patch("/api/account/password", handlers.ChangeAccountPassword)
+    app.Delete("/api/account", handlers.DeleteAccount)
 }

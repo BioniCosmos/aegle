@@ -9,13 +9,14 @@ import (
 )
 
 type config struct {
-    Listen      string `json:"listen"`
-    DatabaseURL string `json:"databaseURL"`
-    Cert        string `json:"cert"`
-    Static      struct {
+    Listen       string `json:"listen"`
+    DatabaseURL  string `json:"databaseURL"`
+    DatabaseName string `json:"databaseName"`
+    Cert         string `json:"cert"`
+    Static       struct {
         Home      string `json:"home"`
         Dashboard string `json:"dashboard"`
-    }   `json:"static"`
+    } `json:"static"`
 }
 
 var Conf config
@@ -32,5 +33,8 @@ func Init() {
     }
     if Conf.DatabaseURL == "" {
         log.Fatal(errors.New("parsing config: no databaseURL specified"))
+    }
+    if Conf.DatabaseName == "" {
+        Conf.DatabaseName = "submgr"
     }
 }

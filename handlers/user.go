@@ -55,16 +55,13 @@ func InsertUser(c *fiber.Ctx) error {
         profile, err := models.FindProfile(profileId.Hex())
         if err != nil {
             if err == mongo.ErrNoDocuments {
-                return fiber.NewError(fiber.StatusBadRequest, "profile not found")
+                return fiber.NewError(fiber.StatusUnprocessableEntity, "profile not found")
             }
             return err
         }
 
         node, err := models.FindNode(profile.NodeId)
         if err != nil {
-            if err == mongo.ErrNoDocuments {
-                return fiber.NewError(fiber.StatusBadRequest, "node not found")
-            }
             return err
         }
         if err := api.AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
@@ -78,7 +75,7 @@ func InsertUser(c *fiber.Ctx) error {
     if err := user.Insert(); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusCreated)
+    return c.JSON(fiber.NewError(fiber.StatusCreated))
 }
 
 func UpdateUser(c *fiber.Ctx) error {
@@ -98,22 +95,16 @@ func UpdateUser(c *fiber.Ctx) error {
     user, err := models.FindUser(id)
     if err != nil {
         if err == mongo.ErrNoDocuments {
-            return fiber.NewError(fiber.StatusBadRequest, "user not found")
+            return fiber.NewError(fiber.StatusNotFound, "user not found")
         }
         return err
     }
     profile, err := models.FindProfile(body.Id.Hex())
     if err != nil {
-        if err == mongo.ErrNoDocuments {
-            return fiber.NewError(fiber.StatusBadRequest, "profile not found")
-        }
         return err
     }
     if body.Operation == operation(Add) {
         if err := services.UserAddProfile(user, profile); err != nil {
-            if err == mongo.ErrNoDocuments {
-                return fiber.NewError(fiber.StatusBadRequest, "node not found")
-            }
             if errors.As(err, &services.SubscriptionError) {
                 return fiber.NewError(fiber.StatusBadRequest, err.Error())
             }
@@ -121,13 +112,10 @@ func UpdateUser(c *fiber.Ctx) error {
         }
     } else {
         if err := services.UserRemoveProfile(user, profile); err != nil {
-            if err == mongo.ErrNoDocuments {
-                return fiber.NewError(fiber.StatusBadRequest, "node not found")
-            }
             return err
         }
     }
-    return c.SendStatus(fiber.StatusNoContent)
+    return c.JSON(fiber.NewError(fiber.StatusOK))
 }
 
 func DeleteUser(c *fiber.Ctx) error {
@@ -135,24 +123,18 @@ func DeleteUser(c *fiber.Ctx) error {
     user, err := models.FindUser(id)
     if err != nil {
         if err == mongo.ErrNoDocuments {
-            return fiber.NewError(fiber.StatusBadRequest, "user not found")
+            return fiber.NewError(fiber.StatusNotFound, "user not found")
         }
         return err
     }
     for profileId := range user.Profiles {
         profile, err := models.FindProfile(profileId.Hex())
         if err != nil {
-            if err == mongo.ErrNoDocuments {
-                return fiber.NewError(fiber.StatusBadRequest, "profile not found")
-            }
             return err
         }
 
         node, err := models.FindNode(profile.NodeId)
         if err != nil {
-            if err == mongo.ErrNoDocuments {
-                return fiber.NewError(fiber.StatusBadRequest, "node not found")
-            }
             return err
         }
         if err := api.RemoveUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
@@ -162,7 +144,7 @@ func DeleteUser(c *fiber.Ctx) error {
     if err := models.DeleteUser(id); err != nil {
         return err
     }
-    return c.SendStatus(fiber.StatusNoContent)
+    return c.JSON(fiber.NewError(fiber.StatusOK))
 }
 
 func FindUserSubscription(c *fiber.Ctx) error {
