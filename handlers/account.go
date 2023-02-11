@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/bionicosmos/submgr/config"
 	"github.com/bionicosmos/submgr/models"
@@ -15,7 +14,6 @@ import (
 var store *session.Store
 
 func SessionInit() {
-	store = session.New()
 	store = session.New(session.Config{
 		Storage: mongodb.New(mongodb.Config{
 			ConnectionURI: config.Conf.DatabaseURL,
@@ -68,6 +66,17 @@ func SignUpAccount(c *fiber.Ctx) error {
 	return c.JSON(fiber.NewError(fiber.StatusCreated))
 }
 
+func SignOutAccount(c *fiber.Ctx) error {
+	session, err := store.Get(c)
+	if err != nil {
+		return err
+	}
+	if err := session.Destroy(); err != nil {
+		return err
+	}
+	return c.JSON(fiber.NewError(fiber.StatusOK))
+}
+
 func ChangeAccountPassword(c *fiber.Ctx) error {
 	password := new(struct {
 		Old string `json:"old"`
@@ -115,7 +124,7 @@ func DeleteAccount(c *fiber.Ctx) error {
 }
 
 func AuthorizeAccount(c *fiber.Ctx) error {
-	if !strings.HasPrefix(c.Path(), "/api/account/sign") {
+	if path := c.Path(); path != "/api/account/sign-in" && path != "/api/account/sign-up" {
 		session, err := store.Get(c)
 		if err != nil {
 			return err

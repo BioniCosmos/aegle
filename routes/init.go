@@ -41,6 +41,7 @@ func Init(app *fiber.App) {
 
 	app.Post("/api/account/sign-in", handlers.SignInAccount)
 	app.Post("/api/account/sign-up", handlers.SignUpAccount)
+	app.Post("/api/account/sign-out", handlers.SignOutAccount)
 	app.Patch("/api/account/password", handlers.ChangeAccountPassword)
 	app.Delete("/api/account", handlers.DeleteAccount)
 }
