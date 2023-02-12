@@ -53,11 +53,11 @@ func SignUpAccount(c *fiber.Ctx) error {
 	if err := c.BodyParser(&account); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	inner, err := models.FindAccount(account.Username)
+	_, err := models.FindAccount(account.Username)
 	if err != nil && err != mongo.ErrNoDocuments {
 		return err
 	}
-	if inner != nil {
+	if err != mongo.ErrNoDocuments {
 		return fiber.NewError(fiber.StatusConflict, "User exists.")
 	}
 	if err := account.Insert(); err != nil {
