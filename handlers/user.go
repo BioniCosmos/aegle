@@ -8,6 +8,7 @@ import (
 	"github.com/bionicosmos/submgr/api"
 	"github.com/bionicosmos/submgr/models"
 	"github.com/bionicosmos/submgr/services"
+	"github.com/bionicosmos/submgr/services/subscription"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -67,7 +68,7 @@ func InsertUser(c *fiber.Ctx) error {
 		if err := api.AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
 			return err
 		}
-		user.Profiles[profileId], err = services.GenerateSubscription(&user, profile)
+		user.Profiles[profileId], err = subscription.Generate(profile, user.Account)
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
@@ -82,7 +83,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	type operation uint
 	const (
-		Add uint = iota
+		Add operation = iota
 		Remove
 	)
 	var body struct {
@@ -103,9 +104,10 @@ func UpdateUser(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	if body.Operation == operation(Add) {
+	if body.Operation == Add {
 		if err := services.UserAddProfile(user, profile); err != nil {
-			if errors.As(err, &services.SubscriptionError) {
+			subscriptionError := new(subscription.Error)
+			if errors.As(err, &subscriptionError) {
 				return fiber.NewError(fiber.StatusBadRequest, err.Error())
 			}
 			return err

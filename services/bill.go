@@ -5,6 +5,7 @@ import (
 
 	"github.com/bionicosmos/submgr/api"
 	"github.com/bionicosmos/submgr/models"
+	"github.com/bionicosmos/submgr/services/subscription"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -48,7 +49,7 @@ func UserAddProfile(user *models.User, profile *models.Profile) error {
 	if err := api.AddUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
 		return err
 	}
-	user.Profiles[profile.Id], err = GenerateSubscription(user, profile)
+	user.Profiles[profile.Id], err = subscription.Generate(profile, user.Account)
 	if err != nil {
 		return err
 	}
