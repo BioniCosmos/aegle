@@ -15,7 +15,7 @@ import (
 type Profile struct {
 	Id       primitive.ObjectID         `json:"id" bson:"_id"`
 	Name     string                     `json:"name"`
-	Inbound  inboundDetourConfig        `json:"inbound"`
+	Inbound  *inboundDetourConfig       `json:"inbound"`
 	Outbound *conf.OutboundDetourConfig `json:"outbound"`
 	NodeId   primitive.ObjectID         `json:"nodeId" bson:"nodeId"`
 }

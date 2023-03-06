@@ -3,7 +3,6 @@ package models
 import (
 	"bytes"
 	"context"
-	"runtime"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -70,7 +69,7 @@ func deriveKey(password string) []byte {
 		[]byte("&y90w6b2&oUEy*%u9Tjz"),
 		1,
 		64*1024,
-		uint8(runtime.NumCPU()),
+		1,
 		32,
 	)
 }

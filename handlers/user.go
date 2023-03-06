@@ -18,7 +18,7 @@ import (
 func FindUser(c *fiber.Ctx) error {
 	user, err := models.FindUser(c.Params("id"))
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
 		}
 		return err
@@ -55,7 +55,7 @@ func InsertUser(c *fiber.Ctx) error {
 	for profileId := range user.Profiles {
 		profile, err := models.FindProfile(profileId.Hex())
 		if err != nil {
-			if err == mongo.ErrNoDocuments {
+			if errors.Is(err, mongo.ErrNoDocuments) {
 				return fiber.NewError(fiber.StatusUnprocessableEntity, "profile not found")
 			}
 			return err
@@ -95,7 +95,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 	user, err := models.FindUser(id)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.NewError(fiber.StatusNotFound, "user not found")
 		}
 		return err
@@ -124,7 +124,7 @@ func DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	user, err := models.FindUser(id)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.NewError(fiber.StatusNotFound, "user not found")
 		}
 		return err
@@ -157,7 +157,7 @@ func FindUserSubscription(c *fiber.Ctx) error {
 	}
 	user, err := models.FindUser(id)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
 		}
 		return err

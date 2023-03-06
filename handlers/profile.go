@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/bionicosmos/submgr/api"
@@ -14,7 +15,7 @@ import (
 func FindProfile(c *fiber.Ctx) error {
 	profile, err := models.FindProfile(c.Params("id"))
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
 		}
 		return err
@@ -41,7 +42,7 @@ func FindProfiles(c *fiber.Ctx) error {
 	if !query.UserId.IsZero() {
 		user, err := models.FindUser(query.UserId.Hex())
 		if err != nil {
-			if err == mongo.ErrNoDocuments {
+			if errors.Is(err, mongo.ErrNoDocuments) {
 				return fiber.NewError(fiber.StatusNotFound, "user not found")
 			}
 			return err
@@ -81,7 +82,7 @@ func InsertProfile(c *fiber.Ctx) error {
 	// However, return 'node not found' if the node does not exist.
 	node, err := models.FindNode(profile.NodeId)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.NewError(fiber.StatusUnprocessableEntity, "node not found")
 		}
 		return err
@@ -110,7 +111,7 @@ func DeleteProfile(c *fiber.Ctx) error {
 
 	profile, err := models.FindProfile(id)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.NewError(fiber.StatusNotFound, "profile not found")
 		}
 		return err

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"time"
 
 	"github.com/bionicosmos/submgr/models"
@@ -21,7 +22,7 @@ func FindUserInvoice(c *fiber.Ctx) error {
 	id := c.Params("id")
 	user, err := models.FindUser(id)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
 		}
 		return err
@@ -63,7 +64,7 @@ func ExtendBillingDate(c *fiber.Ctx) error {
 	}
 	user, err := models.FindUser(id)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
 		}
 		return err

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"regexp"
 
 	"github.com/bionicosmos/submgr/config"
 	"github.com/bionicosmos/submgr/models"
@@ -29,12 +30,12 @@ func SignInAccount(c *fiber.Ctx) error {
 	}
 	if session.Fresh() {
 		account := new(models.Account)
-		if err := c.BodyParser(&account); err != nil {
+		if err := c.BodyParser(account); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
 		inner, err := models.FindAccount(account.Username)
 		if err != nil {
-			if err == mongo.ErrNoDocuments {
+			if errors.Is(err, mongo.ErrNoDocuments) {
 				return fiber.NewError(fiber.StatusUnauthorized, "User does not exist.")
 			}
 			return err
@@ -50,7 +51,7 @@ func SignInAccount(c *fiber.Ctx) error {
 
 func SignUpAccount(c *fiber.Ctx) error {
 	account := new(models.Account)
-	if err := c.BodyParser(&account); err != nil {
+	if err := c.BodyParser(account); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 	_, err := models.FindAccount(account.Username)
@@ -82,7 +83,7 @@ func ChangeAccountPassword(c *fiber.Ctx) error {
 		Old string `json:"old"`
 		New string `json:"new"`
 	})
-	if err := c.BodyParser(&password); err != nil {
+	if err := c.BodyParser(password); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 	session, err := store.Get(c)
@@ -124,7 +125,13 @@ func DeleteAccount(c *fiber.Ctx) error {
 }
 
 func AuthorizeAccount(c *fiber.Ctx) error {
-	if path := c.Path(); path != "/api/account/sign-in" && path != "/api/account/sign-up" {
+	subRegEx, err := regexp.Compile(`^\/api\/user\/[^/]+\/sub.*$`)
+	if err != nil {
+		return err
+	}
+	if path := c.Path(); path != "/api/account/sign-in" &&
+		path != "/api/account/sign-up" &&
+		!subRegEx.MatchString(path) {
 		session, err := store.Get(c)
 		if err != nil {
 			return err
