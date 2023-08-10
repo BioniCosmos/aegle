@@ -39,15 +39,3 @@ func (e IllegalPortError) Error() string {
 
 var ErrNoId = errors.New("no id or password specified")
 var ErrNoHost = errors.New("no address or port specified")
-
-type FlowError string
-
-func (e FlowError) Error() string {
-	info := ""
-	if e == "TLS" {
-		info = "use `xtls-rprx-vision` or nothing with TLS"
-	} else {
-		info = "use `xtls-rprx-direct` or `xtls-rprx-splice` with XTLS"
-	}
-	return fmt.Sprintf("mismatched `flow` and `security` settings: %v", info)
-}

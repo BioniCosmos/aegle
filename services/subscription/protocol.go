@@ -10,7 +10,7 @@ type Protocol interface {
 	Id() (string, error)
 	Host() (string, error)
 	Encryption() string
-	Flow(security string) (string, error)
+	Flow() string
 }
 
 func NewProtocol(protocol string, settings json.RawMessage, account map[string]json.RawMessage) (Protocol, error) {

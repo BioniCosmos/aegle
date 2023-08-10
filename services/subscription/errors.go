@@ -42,3 +42,6 @@ func (e *ParseHeaderError) Unwrap() error {
 
 var ErrNoQuicSecurity = errors.New("security item not specified for QUIC: specify a security item except `none` or remove the key")
 var ErrNoQuicKey = errors.New("no key set for QUIC: set a key or set `security` to `none`")
+
+var ErrNoFingerprint = errors.New("unspecified `fingerprint`: The item cannot be omitted when using REALITY protocol")
+var ErrNoPublicKey = errors.New("unspecified `publicKey`: The item cannot be omitted when using REALITY protocol")

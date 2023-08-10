@@ -3,7 +3,6 @@ package protocol
 import (
 	"encoding/json"
 
-	"github.com/bionicosmos/submgr/services/subscription/common"
 	"github.com/xtls/xray-core/infra/conf"
 	_vless "github.com/xtls/xray-core/proxy/vless"
 )
@@ -41,26 +40,8 @@ func (vless *vless) Encryption() string {
 	return encryption
 }
 
-func (vless *vless) Flow(security string) (string, error) {
-	flow := vless.Account.Flow
-	switch {
-	case common.IsNone(security):
-		return "", nil
-	case security == "tls":
-		if common.IsNone(flow) {
-			return "", nil
-		}
-		if !isFlowVision(flow) {
-			return "", FlowError("TLS")
-		}
-	case security == "xtls":
-		if common.IsNone(flow) || isFlowVision(flow) {
-			return "", FlowError("XTLS")
-		}
-	default:
-		return "", common.UnknownSecurityError(security)
-	}
-	return flow, nil
+func (vless *vless) Flow() string {
+	return vless.Account.Flow
 }
 
 func NewVless(outboundSettings json.RawMessage, userAccount json.RawMessage) (*vless, error) {

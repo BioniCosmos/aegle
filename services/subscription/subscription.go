@@ -90,7 +90,11 @@ func Generate(profile *models.Profile, account map[string]json.RawMessage) (stri
 
 	// 4. TLS
 	// 4.0 fp
-	query.Set("fp", getFp(stream.TLSSettings))
+	if fp, err := getFp(stream); err != nil {
+		return "", &Error{err}
+	} else {
+		query.Set("fp", fp)
+	}
 	// 4.1 sni
 	if sni, err := getSni(stream); err != nil {
 		return "", &Error{err}
@@ -104,10 +108,16 @@ func Generate(profile *models.Profile, account map[string]json.RawMessage) (stri
 		query.Set("alpn", alpn)
 	}
 	// 4.4 flow
-	if flow, err := protocol.Flow(stream.Security); err != nil {
+	query.Set("flow", protocol.Flow())
+	if pbk, sid, spx, err := getReality(stream); err != nil {
 		return "", &Error{err}
 	} else {
-		query.Set("flow", flow)
+		// 4.5 pbk
+		query.Set("pbk", pbk)
+		// 4.6 sid
+		query.Set("sid", sid)
+		// 4.7 spx
+		query.Set("spx", spx)
 	}
 
 	removeAllEmpty(query)
@@ -228,11 +238,22 @@ func getMode(grpcSettings *conf.GRPCConfig) string {
 	return ""
 }
 
-func getFp(tlsSettings *conf.TLSConfig) string {
-	if tlsSettings == nil {
-		return ""
+func getFp(stream *conf.StreamConfig) (string, error) {
+	switch stream.Security {
+	case "tls":
+		if settings := stream.TLSSettings; settings != nil {
+			return settings.Fingerprint, nil
+		}
+	case "reality":
+		if settings := stream.REALITYSettings; settings == nil || settings.Fingerprint == "" {
+			return "", ErrNoFingerprint
+		} else {
+			return settings.Fingerprint, nil
+		}
+	default:
+		return "", common.UnknownSecurityError(stream.Security)
 	}
-	return tlsSettings.Fingerprint
+	return "", nil
 }
 
 func getSni(stream *conf.StreamConfig) (string, error) {
@@ -241,8 +262,8 @@ func getSni(stream *conf.StreamConfig) (string, error) {
 		if settings := stream.TLSSettings; settings != nil {
 			return settings.ServerName, nil
 		}
-	case "xtls":
-		if settings := stream.XTLSSettings; settings != nil {
+	case "reality":
+		if settings := stream.REALITYSettings; settings != nil {
 			return settings.ServerName, nil
 		}
 	default:
@@ -252,23 +273,26 @@ func getSni(stream *conf.StreamConfig) (string, error) {
 }
 
 func getAlpn(stream *conf.StreamConfig) (string, error) {
-	switch stream.Security {
-	case "tls":
-		if settings := stream.TLSSettings; settings != nil {
-			if alpn := settings.ALPN; alpn != nil {
-				return strings.Join(*alpn, ","), nil
-			}
+	if stream.Security != "tls" {
+		return "", nil
+	}
+	if settings := stream.TLSSettings; settings != nil {
+		if alpn := settings.ALPN; alpn != nil {
+			return strings.Join(*alpn, ","), nil
 		}
-	case "xtls":
-		if settings := stream.XTLSSettings; settings != nil {
-			if alpn := settings.ALPN; alpn != nil {
-				return strings.Join(*alpn, ","), nil
-			}
-		}
-	default:
-		return "", common.UnknownSecurityError(stream.Security)
 	}
 	return "", nil
+}
+
+func getReality(stream *conf.StreamConfig) (string, string, string, error) {
+	if stream.Security != "reality" {
+		return "", "", "", nil
+	}
+	if settings := stream.REALITYSettings; settings == nil || settings.PublicKey == "" {
+		return "", "", "", ErrNoPublicKey
+	} else {
+		return settings.PublicKey, settings.ShortId, settings.SpiderX, nil
+	}
 }
 
 func removeAllEmpty(query url.Values) {

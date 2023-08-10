@@ -35,8 +35,8 @@ func (vmess *vmess) Encryption() string {
 	return vmess.Security
 }
 
-func (*vmess) Flow(string) (string, error) {
-	return "", nil
+func (*vmess) Flow() string {
+	return ""
 }
 
 func NewVmess(outboundSettings json.RawMessage, userAccount json.RawMessage) (*vmess, error) {

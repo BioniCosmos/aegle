@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/xtls/xray-core/infra/conf"
 )
@@ -16,8 +15,4 @@ func getHost(address *conf.Address, port uint16) (string, error) {
 		return "", IllegalPortError(port)
 	}
 	return fmt.Sprintf("%v:%v", address, port), nil
-}
-
-func isFlowVision(flow string) bool {
-	return strings.HasPrefix(flow, "xtls-rprx-vision")
 }

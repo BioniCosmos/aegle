@@ -36,15 +36,8 @@ func (*trojan) Encryption() string {
 	return ""
 }
 
-func (trojan *trojan) Flow(security string) (string, error) {
-	if security != "xtls" {
-		return "", nil
-	}
-	flow := trojan.Account.Flow
-	if flow == "" {
-		return "", FlowError("XTLS")
-	}
-	return flow, nil
+func (trojan *trojan) Flow() string {
+	return ""
 }
 
 func NewTrojan(outboundSettings json.RawMessage, userAccount json.RawMessage) (*trojan, error) {
