@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/bionicosmos/submgr/config"
@@ -30,42 +31,74 @@ func dialAPIServer(apiAddress string) (*grpc.ClientConn, context.Context, contex
 	return conn, ctx, cancelFunc, nil
 }
 
-func CheckAllInbounds() error {
-	profiles, err := models.FindProfiles(bson.D{}, bson.D{}, 0, 0)
+func ResetNode(node *models.Node) error {
+	profiles, err := models.FindProfiles(bson.D{{Key: "nodeId", Value: node.Id}}, bson.D{}, 0, 0)
 	if err != nil {
 		return err
 	}
+
+	var wg sync.WaitGroup
+	errorCh := make(chan error)
+
 	for _, profile := range profiles {
-		node, err := models.FindNode(profile.NodeId)
-		if err != nil {
-			return err
-		}
-		if err := AddInbound(profile.Inbound.ToConf(), node.APIAddress); err != nil {
-			log.Print(err)
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := AddInbound(profile.Inbound.ToConf(), node.APIAddress); err != nil {
+				errorCh <- err
+				return
+			}
+
+			users, err := models.FindUsers(bson.M{"profiles." + profile.Id.Hex(): bson.M{"$exists": true}}, bson.D{}, 0, 0)
+			if err != nil {
+				errorCh <- err
+				return
+			}
+
+			for _, user := range users {
+				if err := AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
+					errorCh <- err
+					return
+				}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(errorCh)
+	}()
+
+	for err := range errorCh {
+		return err
 	}
 	return nil
 }
 
-func CheckAllUsers() error {
-	users, err := models.FindUsers(bson.D{}, bson.D{}, 0, 0)
+func ResetAllNodes() error {
+	nodes, err := models.FindNodes(0, 0)
 	if err != nil {
 		return err
 	}
-	for _, user := range users {
-		for profileId := range user.Profiles {
-			profile, err := models.FindProfile(profileId.Hex())
-			if err != nil {
-				return err
-			}
-			node, err := models.FindNode(profile.NodeId)
-			if err != nil {
-				return err
-			}
-			if err := AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
-				log.Print(err)
-			}
-		}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error)
+
+	for _, node := range nodes {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ResetNode(&node)
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	for err := range errCh {
+		log.Print(err)
 	}
 	return nil
 }

@@ -66,6 +66,6 @@ require (
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240221002015-b0ce06bbee7c // indirect
-	gvisor.dev/gvisor v0.0.0-20240221215419-1303df5f706e // indirect
+	gvisor.dev/gvisor v0.0.0-20231104011432-48a6d7d5bd0b // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )

@@ -12,10 +12,7 @@ import (
 func Init() {
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.Every(30).Minutes().Do(func() {
-		if err := api.CheckAllInbounds(); err != nil {
-			log.Print(err)
-		}
-		if err := api.CheckAllUsers(); err != nil {
+		if err := api.ResetAllNodes(); err != nil {
 			log.Print(err)
 		}
 	})

@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 
+	"github.com/bionicosmos/submgr/api"
 	"github.com/bionicosmos/submgr/models"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -81,6 +82,18 @@ func DeleteNode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusConflict, "Profiles binding to the node are not empty.")
 	}
 	if err := models.DeleteNode(c.Params("id")); err != nil {
+		return err
+	}
+	return c.JSON(fiber.NewError(fiber.StatusOK))
+}
+
+func ResetNode(c *fiber.Ctx) error {
+	id := c.Params("id")
+	node, err := models.FindNode(id)
+	if err != nil {
+		return err
+	}
+	if err := api.ResetNode(node); err != nil {
 		return err
 	}
 	return c.JSON(fiber.NewError(fiber.StatusOK))
