@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bionicosmos/submgr/models"
-	//lint:ignore SA1019 Needed by the upstream
-	"github.com/golang/protobuf/proto"
 	"github.com/xtls/xray-core/app/proxyman/command"
 	"github.com/xtls/xray-core/common/protocol"
 	"github.com/xtls/xray-core/common/serial"
 	"github.com/xtls/xray-core/infra/conf"
 	"github.com/xtls/xray-core/proxy/trojan"
 	"github.com/xtls/xray-core/proxy/vless"
+	"google.golang.org/protobuf/proto"
 )
 
 func AddInbound(inbound *conf.InboundDetourConfig, apiAddress string) error {
