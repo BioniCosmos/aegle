@@ -10,7 +10,6 @@ import (
 	"github.com/bionicosmos/submgr/services"
 	"github.com/bionicosmos/submgr/services/subscription"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -35,16 +34,14 @@ func FindUsers(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	users, err := models.FindUsers(bson.D{}, bson.D{
-		{Key: "name", Value: 1},
-	}, query.Skip, query.Limit)
+	res, err := models.UserProfilesAggregateQuery(query.Skip, query.Limit)
 	if err != nil {
 		return err
 	}
-	if users == nil {
+	if len(res) == 0 {
 		return fiber.ErrNotFound
 	}
-	return c.JSON(users)
+	return c.JSON(res)
 }
 
 func InsertUser(c *fiber.Ctx) error {

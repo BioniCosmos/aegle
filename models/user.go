@@ -77,3 +77,61 @@ func DeleteUser(id string) error {
 	})
 	return err
 }
+
+type UserResponse struct {
+	User     User      `json:"user,omitempty"`
+	Profiles []Profile `json:"profiles,omitempty"`
+}
+
+func UserProfilesAggregateQuery(skip int64, limit int64) ([]UserResponse, error) {
+	pipeline := bson.A{
+		bson.M{"$skip": skip},
+		bson.M{"$limit": limit},
+		bson.M{
+			"$project": bson.M{
+				"_id": 0,
+				"user": bson.M{
+					"_id":         "$_id",
+					"account":     "$account",
+					"billingDate": "$billingDate",
+					"email":       "$email",
+					"level":       "$level",
+					"name":        "$name",
+					"profiles":    "$profiles",
+				},
+				"profiles": bson.M{
+					"$map": bson.M{
+						"input": bson.M{"$objectToArray": "$profiles"},
+						"as":    "profile",
+						"in": bson.M{
+							"$convert": bson.M{
+								"input": "$$profile.k",
+								"to":    "objectId",
+							},
+						},
+					},
+				},
+			},
+		},
+		bson.M{
+			"$lookup": bson.M{
+				"from":         "profiles",
+				"localField":   "profiles",
+				"foreignField": "_id",
+				"as":           "profiles",
+			},
+		},
+	}
+
+	cursor, err := usersColl.Aggregate(context.Background(), pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]UserResponse, 0)
+	if err := cursor.All(context.Background(), &res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
