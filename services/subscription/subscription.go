@@ -89,35 +89,37 @@ func Generate(profile *models.Profile, account map[string]json.RawMessage) (stri
 	query.Set("mode", getMode(stream.GRPCConfig))
 
 	// 4. TLS
-	// 4.0 fp
-	if fp, err := getFp(stream); err != nil {
-		return "", &Error{err}
-	} else {
-		query.Set("fp", fp)
-	}
-	// 4.1 sni
-	if sni, err := getSni(stream); err != nil {
-		return "", &Error{err}
-	} else {
-		query.Set("sni", sni)
-	}
-	// 4.2 alpn
-	if alpn, err := getAlpn(stream); err != nil {
-		return "", &Error{err}
-	} else {
-		query.Set("alpn", alpn)
-	}
-	// 4.4 flow
-	query.Set("flow", protocol.Flow())
-	if pbk, sid, spx, err := getReality(stream); err != nil {
-		return "", &Error{err}
-	} else {
-		// 4.5 pbk
-		query.Set("pbk", pbk)
-		// 4.6 sid
-		query.Set("sid", sid)
-		// 4.7 spx
-		query.Set("spx", spx)
+	if stream.Security == "tls" || stream.Security == "reality" {
+		// 4.0 fp
+		if fp, err := getFp(stream); err != nil {
+			return "", &Error{err}
+		} else {
+			query.Set("fp", fp)
+		}
+		// 4.1 sni
+		if sni, err := getSni(stream); err != nil {
+			return "", &Error{err}
+		} else {
+			query.Set("sni", sni)
+		}
+		// 4.2 alpn
+		if alpn, err := getAlpn(stream); err != nil {
+			return "", &Error{err}
+		} else {
+			query.Set("alpn", alpn)
+		}
+		// 4.4 flow
+		query.Set("flow", protocol.Flow())
+		if pbk, sid, spx, err := getReality(stream); err != nil {
+			return "", &Error{err}
+		} else {
+			// 4.5 pbk
+			query.Set("pbk", pbk)
+			// 4.6 sid
+			query.Set("sid", sid)
+			// 4.7 spx
+			query.Set("spx", spx)
+		}
 	}
 
 	removeAllEmpty(query)
