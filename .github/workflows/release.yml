@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        goarch: [amd64, arm64]
+        goos: [linux, darwin]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Build
+        run: go build -o submgr-${{ matrix.goos }}-${{ matrix.goarch }} -ldflags "-w -s -buildid=" -trimpath
+        env:
+          CGO_ENABLED: 0
+          GOARCH: ${{ matrix.goarch }}
+          GOOS: ${{ matrix.goos }}
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: submgr-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: submgr-${{ matrix.goos }}-${{ matrix.goarch }}
+  post:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download a Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: submgr*
+          file_glob: true
+          draft: true
