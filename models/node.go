@@ -74,3 +74,39 @@ func DeleteNode(id string) error {
 	})
 	return err
 }
+
+type NodeResponse struct {
+	Node     Node      `json:"node,omitempty"`
+	Profiles []Profile `json:"profiles,omitempty"`
+}
+
+func NodeProfilesAggregateQuery(skip int64, limit int64) ([]NodeResponse, error) {
+	pipeline := bson.A{
+		bson.M{"$lookup": bson.M{
+			"from":         "profiles",
+			"localField":   "_id",
+			"foreignField": "nodeId",
+			"as":           "profiles",
+		}},
+		bson.M{"$project": bson.M{
+			"_id": 0,
+			"node": bson.M{
+				"_id":        "$_id",
+				"name":       "$name",
+				"apiAddress": "$apiAddress",
+			},
+			"profiles": "$profiles",
+		}},
+	}
+	cursor, err := nodesColl.Aggregate(context.Background(), pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]NodeResponse, 0)
+	if err := cursor.All(context.Background(), &res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

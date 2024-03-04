@@ -31,14 +31,14 @@ func FindNodes(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	nodes, err := models.FindNodes(query.Skip, query.Limit)
+	res, err := models.NodeProfilesAggregateQuery(query.Skip, query.Limit)
 	if err != nil {
 		return err
 	}
-	if nodes == nil {
+	if len(res) == 0 {
 		return fiber.ErrNotFound
 	}
-	return c.JSON(nodes)
+	return c.JSON(res)
 }
 
 func InsertNode(c *fiber.Ctx) error {
