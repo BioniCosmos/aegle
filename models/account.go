@@ -10,9 +10,10 @@ import (
 )
 
 type Account struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	IsAdmin  bool   `json:"isAdmin"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	IsAdmin    bool   `json:"isAdmin"`
+	IsExtended bool   `json:"isExtended"`
 }
 
 type innerAccount struct {

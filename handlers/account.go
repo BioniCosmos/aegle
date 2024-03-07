@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"regexp"
+	"time"
 
 	"github.com/bionicosmos/submgr/config"
 	"github.com/bionicosmos/submgr/models"
@@ -16,6 +17,7 @@ var store *session.Store
 
 func SessionInit() {
 	store = session.New(session.Config{
+		Expiration: time.Hour * 24 * 30,
 		Storage: mongodb.New(mongodb.Config{
 			ConnectionURI: config.Conf.DatabaseURL,
 			Database:      config.Conf.DatabaseName,
@@ -43,6 +45,7 @@ func SignInAccount(c *fiber.Ctx) error {
 		if !account.PasswordIsCorrect(inner) {
 			return fiber.ErrUnauthorized
 		}
+		store.CookieSessionOnly = !account.IsExtended
 		session.Set("username", account.Username)
 		session.Save()
 	}
