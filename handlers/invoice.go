@@ -49,7 +49,7 @@ func FindUserInvoices(c *fiber.Ctx) error {
 	}
 	invoices := make([]invoice, 0, len(users))
 	for _, user := range users {
-		invoices = append(invoices, *invoiceFromUser(&user))
+		invoices = append(invoices, invoiceFromUser(&user))
 	}
 	return c.JSON(invoices)
 }
@@ -62,6 +62,7 @@ func ExtendBillingDate(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
+
 	user, err := models.FindUser(id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -69,20 +70,22 @@ func ExtendBillingDate(c *fiber.Ctx) error {
 		}
 		return err
 	}
+
 	user.BillingDate = body.BillingDate
 	if err := user.Update(); err != nil {
 		return err
 	}
-	return c.JSON(fiber.NewError(fiber.StatusOK))
+
+	return c.JSON(invoiceFromUser(user))
 }
 
-func invoiceFromUser(user *models.User) *invoice {
+func invoiceFromUser(user *models.User) invoice {
 	nextBillingDate := user.BillingDate.AddDate(0, 1, 0)
 	isPaid := false
 	if nextBillingDate.After(time.Now()) {
 		isPaid = true
 	}
-	return &invoice{
+	return invoice{
 		Id:              user.Id,
 		Name:            user.Name,
 		NextBillingDate: &nextBillingDate,
