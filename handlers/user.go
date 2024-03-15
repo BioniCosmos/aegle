@@ -168,3 +168,14 @@ func FindUserSubscription(c *fiber.Ctx) error {
 	}
 	return c.SendString(subscription.String())
 }
+
+func Extend(c *fiber.Ctx) error {
+	user := models.User{}
+	if err := c.BodyParser(&user); err != nil {
+		return fiber.ErrBadRequest
+	}
+	if err := user.Update(); err != nil {
+		return err
+	}
+	return c.JSON(fiber.NewError(fiber.StatusOK))
+}

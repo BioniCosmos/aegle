@@ -1,7 +1,7 @@
 package services
 
 import (
-	"time"
+	"sync"
 
 	"github.com/bionicosmos/submgr/api"
 	"github.com/bionicosmos/submgr/models"
@@ -11,33 +11,52 @@ import (
 )
 
 func CheckUserBill() error {
-	users, err := models.FindUsers(bson.D{
-		{Key: "billingDate", Value: bson.D{
-			{Key: "$lte", Value: time.Now().AddDate(0, -1, 0)},
-		}},
-	}, bson.D{}, 0, 0)
+	users, err := models.QueryBillExpiredUsers()
 	if err != nil {
 		return err
 	}
+
+	chSize := 0
+	for _, user := range users {
+		chSize += len(user.Profiles)
+	}
+	wg := sync.WaitGroup{}
+	errCh := make(chan error, chSize)
+
 	for _, user := range users {
 		profileIds := make([]primitive.ObjectID, 0, len(user.Profiles))
 		for profileId := range user.Profiles {
 			profileIds = append(profileIds, profileId)
 		}
-		profiles, err := models.FindProfiles(bson.D{
-			{Key: "_id", Value: bson.D{
-				{Key: "$in", Value: profileIds},
-			}},
+		profiles, err := models.FindProfiles(bson.M{
+			"_id": bson.M{"$in": profileIds},
 		}, bson.D{}, 0, 0)
 		if err != nil {
 			return err
 		}
+
 		for _, profile := range profiles {
-			if err := UserRemoveProfile(&user, &profile); err != nil {
-				return err
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := UserRemoveProfile(&user, &profile); err != nil {
+					errCh <- err
+				}
+			}()
 		}
 	}
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	for err := range errCh {
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

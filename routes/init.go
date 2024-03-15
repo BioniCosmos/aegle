@@ -35,10 +35,7 @@ func Init(app *fiber.App) {
 	app.Patch("/api/user/:id", handlers.UpdateUser)
 	app.Delete("/api/user/:id", handlers.DeleteUser)
 	app.Get("/api/user/:id/sub", handlers.FindUserSubscription)
-
-	app.Get("/api/invoice/:id", handlers.FindUserInvoice)
-	app.Get("/api/invoices", handlers.FindUserInvoices)
-	app.Patch("/api/invoice/:id", handlers.ExtendBillingDate)
+	app.Put("/api/user", handlers.Extend)
 
 	app.Post("/api/account/sign-in", handlers.SignInAccount)
 	app.Post("/api/account/sign-up", handlers.SignUpAccount)

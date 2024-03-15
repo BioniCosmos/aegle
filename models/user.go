@@ -12,13 +12,15 @@ import (
 )
 
 type User struct {
-	Id          primitive.ObjectID            `json:"id" bson:"_id"`
-	Name        string                        `json:"name"`
-	Email       string                        `json:"email"`
-	Level       uint32                        `json:"level"`
-	BillingDate *time.Time                    `json:"billingDate" bson:"billingDate"`
-	Account     map[string]json.RawMessage    `json:"account"`
-	Profiles    map[primitive.ObjectID]string `json:"profiles"`
+	Id        primitive.ObjectID            `json:"id" bson:"_id"`
+	Name      string                        `json:"name"`
+	Email     string                        `json:"email"`
+	Level     uint32                        `json:"level"`
+	StartDate string                        `json:"startDate" bson:"startDate"`
+	Cycles    int                           `json:"cycles" bson:"cycles"`
+	NextDate  string                        `json:"nextDate" bson:"nextDate"`
+	Account   map[string]json.RawMessage    `json:"account"`
+	Profiles  map[primitive.ObjectID]string `json:"profiles"`
 }
 
 var usersColl *mongo.Collection
@@ -91,13 +93,15 @@ func UserProfilesAggregateQuery(skip int64, limit int64) ([]UserResponse, error)
 			"$project": bson.M{
 				"_id": 0,
 				"user": bson.M{
-					"_id":         "$_id",
-					"account":     "$account",
-					"billingDate": "$billingDate",
-					"email":       "$email",
-					"level":       "$level",
-					"name":        "$name",
-					"profiles":    "$profiles",
+					"_id":       "$_id",
+					"account":   "$account",
+					"startDate": "$startDate",
+					"cycles":    "$cycles",
+					"nextDate":  "$nextDate",
+					"email":     "$email",
+					"level":     "$level",
+					"name":      "$name",
+					"profiles":  "$profiles",
 				},
 				"profiles": bson.M{
 					"$map": bson.M{
@@ -134,4 +138,32 @@ func UserProfilesAggregateQuery(skip int64, limit int64) ([]UserResponse, error)
 	}
 
 	return res, nil
+}
+
+func QueryBillExpiredUsers() ([]User, error) {
+	pipeline := bson.A{
+		bson.M{
+			"$match": bson.M{
+				"$expr": bson.M{
+					"$lt": bson.A{
+						bson.M{
+							"$toDate": bson.M{
+								"$first": bson.M{
+									"$split": bson.A{"$nextDate", "["},
+								},
+							},
+						},
+						time.Now(),
+					},
+				},
+			},
+		},
+	}
+	cursor, err := usersColl.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]User, 0)
+	return users, cursor.All(context.TODO(), &users)
 }
