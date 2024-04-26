@@ -52,7 +52,7 @@ func FindProfiles(filter any, sort any, skip int64, limit int64) ([]Profile, err
 		return nil, err
 	}
 
-	var profiles []Profile
+	profiles := make([]Profile, 0)
 	return profiles, cursor.All(context.TODO(), &profiles)
 }
 

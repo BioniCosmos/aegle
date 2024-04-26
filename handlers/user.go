@@ -38,9 +38,6 @@ func FindUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	if len(res) == 0 {
-		return fiber.ErrNotFound
-	}
 	return c.JSON(res)
 }
 

@@ -64,9 +64,6 @@ func FindProfiles(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	if profiles == nil {
-		return fiber.ErrNotFound
-	}
 	return c.JSON(profiles)
 }
 
