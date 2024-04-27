@@ -14,17 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func FindUser(c *fiber.Ctx) error {
-	user, err := models.FindUser(c.Params("id"))
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fiber.ErrNotFound
-		}
-		return err
-	}
-	return c.JSON(user)
-}
-
 func FindUsers(c *fiber.Ctx) error {
 	var query struct {
 		Skip  int64 `query:"skip"`
