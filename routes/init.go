@@ -4,7 +4,6 @@ import (
 	"path"
 
 	"github.com/bionicosmos/submgr/config"
-	"github.com/bionicosmos/submgr/graphql"
 	"github.com/bionicosmos/submgr/handlers"
 	"github.com/gofiber/fiber/v2"
 )
@@ -30,6 +29,7 @@ func Init(app *fiber.App) {
 	app.Post("/api/profile", handlers.InsertProfile)
 	app.Delete("/api/profile/:id", handlers.DeleteProfile)
 
+	app.Get("/api/user/:id", handlers.FindUser)
 	app.Get("/api/users", handlers.FindUsers)
 	app.Post("/api/user", handlers.InsertUser)
 	app.Patch("/api/user/:id", handlers.UpdateUser)
@@ -42,6 +42,4 @@ func Init(app *fiber.App) {
 	app.Post("/api/account/sign-out", handlers.SignOutAccount)
 	app.Patch("/api/account/password", handlers.ChangeAccountPassword)
 	app.Delete("/api/account", handlers.DeleteAccount)
-
-	app.All("/graphql", graphql.Handler)
 }
