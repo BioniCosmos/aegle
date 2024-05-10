@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bionicosmos/submgr/api"
+	"github.com/bionicosmos/submgr/handlers/transfer"
 	"github.com/bionicosmos/submgr/models"
 	"github.com/bionicosmos/submgr/services"
 	"github.com/bionicosmos/submgr/services/subscription"
@@ -22,7 +23,7 @@ func FindUser(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	return c.JSON(user)
+	return c.JSON(transfer.UserGetFromUser(user))
 }
 
 func FindUsers(c *fiber.Ctx) error {
@@ -42,11 +43,12 @@ func FindUsers(c *fiber.Ctx) error {
 }
 
 func InsertUser(c *fiber.Ctx) error {
-	var user models.User
-	if err := c.BodyParser(&user); err != nil {
+	userPost := transfer.UserPost{}
+	if err := c.BodyParser(&userPost); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	for profileId := range user.Profiles {
+	user := userPost.ToUser()
+	for _, profileId := range userPost.ProfileIds {
 		profile, err := models.FindProfile(profileId.Hex())
 		if err != nil {
 			if errors.Is(err, mongo.ErrNoDocuments) {
@@ -59,7 +61,11 @@ func InsertUser(c *fiber.Ctx) error {
 		if err != nil {
 			return err
 		}
-		if err := api.AddUser(profile.Inbound.ToConf(), &user, node.APIAddress); err != nil {
+		if err := api.AddUser(
+			profile.Inbound.ToConf(),
+			&user,
+			node.APIAddress,
+		); err != nil {
 			return err
 		}
 		user.Profiles[profileId], err = subscription.Generate(profile, user.Account)
@@ -167,12 +173,18 @@ func FindUserSubscription(c *fiber.Ctx) error {
 }
 
 func Extend(c *fiber.Ctx) error {
-	user := models.User{}
-	if err := c.BodyParser(&user); err != nil {
+	userPut := transfer.UserPut{}
+	if err := c.BodyParser(&userPut); err != nil {
 		return fiber.ErrBadRequest
 	}
+	user, err := models.FindUser(userPut.Id)
+	if err != nil {
+		return err
+	}
+	user.Cycles = userPut.Cycles
+	user.NextDate = userPut.NextDate
 	if err := user.Update(); err != nil {
 		return err
 	}
-	return c.JSON(fiber.NewError(fiber.StatusOK))
+	return c.SendStatus(fiber.StatusOK)
 }
