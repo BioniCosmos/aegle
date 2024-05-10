@@ -68,6 +68,9 @@ func UserAddProfile(user *models.User, profile *models.Profile) error {
 	if err := api.AddUser(profile.Inbound.ToConf(), user, node.APIAddress); err != nil {
 		return err
 	}
+	if user.Profiles == nil {
+		user.Profiles = make(map[primitive.ObjectID]string)
+	}
 	user.Profiles[profile.Id], err = subscription.Generate(profile, user.Account)
 	if err != nil {
 		return err
