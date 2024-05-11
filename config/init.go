@@ -35,6 +35,6 @@ func Init() {
 		log.Fatal(errors.New("parsing config: no databaseURL specified"))
 	}
 	if Conf.DatabaseName == "" {
-		Conf.DatabaseName = "submgr"
+		Conf.DatabaseName = "aegle"
 	}
 }

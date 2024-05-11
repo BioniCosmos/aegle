@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/bionicosmos/submgr/config"
-	"github.com/bionicosmos/submgr/models"
+	"github.com/bionicosmos/aegle/config"
+	"github.com/bionicosmos/aegle/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/storage/mongodb"

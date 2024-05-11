@@ -3,7 +3,7 @@ package transfer
 import (
 	"encoding/json"
 
-	"github.com/bionicosmos/submgr/models"
+	"github.com/bionicosmos/aegle/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

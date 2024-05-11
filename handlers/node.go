@@ -3,8 +3,8 @@ package handlers
 import (
 	"errors"
 
-	"github.com/bionicosmos/submgr/api"
-	"github.com/bionicosmos/submgr/models"
+	"github.com/bionicosmos/aegle/api"
+	"github.com/bionicosmos/aegle/models"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

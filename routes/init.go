@@ -3,8 +3,8 @@ package routes
 import (
 	"path"
 
-	"github.com/bionicosmos/submgr/config"
-	"github.com/bionicosmos/submgr/handlers"
+	"github.com/bionicosmos/aegle/config"
+	"github.com/bionicosmos/aegle/handlers"
 	"github.com/gofiber/fiber/v2"
 )
 

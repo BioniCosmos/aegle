@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bionicosmos/submgr/config"
-	"github.com/bionicosmos/submgr/models"
+	"github.com/bionicosmos/aegle/config"
+	"github.com/bionicosmos/aegle/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

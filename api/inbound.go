@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/bionicosmos/submgr/models"
+	"github.com/bionicosmos/aegle/models"
 	"github.com/xtls/xray-core/app/proxyman/command"
 	"github.com/xtls/xray-core/common/protocol"
 	"github.com/xtls/xray-core/common/serial"

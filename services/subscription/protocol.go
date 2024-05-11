@@ -3,7 +3,7 @@ package subscription
 import (
 	"encoding/json"
 
-	proto "github.com/bionicosmos/submgr/services/subscription/protocol"
+	proto "github.com/bionicosmos/aegle/services/subscription/protocol"
 )
 
 type Protocol interface {

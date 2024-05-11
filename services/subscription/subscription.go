@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/bionicosmos/submgr/models"
-	"github.com/bionicosmos/submgr/services/subscription/common"
+	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/services/subscription/common"
 	"github.com/xtls/xray-core/infra/conf"
 )
 

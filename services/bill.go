@@ -3,9 +3,9 @@ package services
 import (
 	"sync"
 
-	"github.com/bionicosmos/submgr/api"
-	"github.com/bionicosmos/submgr/models"
-	"github.com/bionicosmos/submgr/services/subscription"
+	"github.com/bionicosmos/aegle/api"
+	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/services/subscription"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

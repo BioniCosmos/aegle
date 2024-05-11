@@ -1,13 +1,15 @@
-# Subscription Manager
+# Aegle
 
-[![Release](https://github.com/BioniCosmos/SubMGR/actions/workflows/release.yml/badge.svg)](https://github.com/BioniCosmos/SubMGR/actions/workflows/release.yml)
+> *And in that light, I find deliverance.*
 
-your little helper which calls Xray APIs to help you manage nodes and users
+[![Release](https://github.com/BioniCosmos/aegle/actions/workflows/release.yml/badge.svg)](https://github.com/BioniCosmos/aegle/actions/workflows/release.yml)
+
+An Xray dashboard which helps you manage subscriptions
 
 [frontend repository](https://github.com/BioniCosmos/submgr-frontend)
 
 ## License
 
-[MPL-2.0](https://github.com/BioniCosmos/SubMGR/blob/master/LICENSE)
+[MPL-2.0](https://github.com/BioniCosmos/aegle/blob/master/LICENSE)
 
 © 2022–2024 Daniel Ding

@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/bionicosmos/submgr/api"
-	"github.com/bionicosmos/submgr/services"
+	"github.com/bionicosmos/aegle/api"
+	"github.com/bionicosmos/aegle/services"
 	"github.com/go-co-op/gocron"
 )
 

@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/bionicosmos/submgr/config"
-	"github.com/bionicosmos/submgr/cron"
-	"github.com/bionicosmos/submgr/handlers"
-	"github.com/bionicosmos/submgr/models"
-	"github.com/bionicosmos/submgr/routes"
+	"github.com/bionicosmos/aegle/config"
+	"github.com/bionicosmos/aegle/cron"
+	"github.com/bionicosmos/aegle/handlers"
+	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/routes"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )

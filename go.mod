@@ -1,4 +1,4 @@
-module github.com/bionicosmos/submgr
+module github.com/bionicosmos/aegle
 
 go 1.22.0
 
