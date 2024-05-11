@@ -1,0 +1,41 @@
+syntax = "proto3";
+package xray;
+
+option go_package = "github.com/bionicosmos/aegle/edge/xray";
+
+service Xray {
+  rpc AddInbound(AddInboundRequest) returns (Response);
+  rpc RemoveInbound(RemoveInboundRequest) returns (Response);
+  rpc AddUser(AddUserRequest) returns (Response);
+  rpc RemoveUser(RemoveUserRequest) returns (Response);
+}
+
+message AddInboundRequest {
+  string name = 1;
+  string inbound = 2;
+}
+
+message RemoveInboundRequest {
+  string name = 1;
+}
+
+message AddUserRequest {
+  string profileName = 1;
+  User user = 2;
+}
+
+message RemoveUserRequest {
+  string profileName = 1;
+  string email = 2;
+}
+
+message Response {
+  string message = 1;
+}
+
+message User {
+  string email = 1;
+  uint32 level = 2;
+  string uuid = 3;
+  string flow = 4;
+}
