@@ -17,7 +17,5 @@ func Start() {
 	server := grpc.NewServer()
 	pb.RegisterXrayServer(server, &pb.Server{})
 	fmt.Println(listener.Addr())
-	if err := server.Serve(listener); err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(server.Serve(listener))
 }

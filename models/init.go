@@ -10,23 +10,33 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var db *mongo.Database
-
-func Init() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(config.Conf.DatabaseURL))
+func Init() *mongo.Client {
+	ctx := context.Background()
+	client, err := mongo.Connect(
+		ctx,
+		options.Client().ApplyURI(config.Conf.DatabaseURL),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	db = client.Database(config.Conf.DatabaseName)
+	db := client.Database(config.Conf.DatabaseName)
 	nodesColl = db.Collection("nodes")
 	profilesColl = db.Collection("profiles")
 	usersColl = db.Collection("users")
 	accountsColl = db.Collection("accounts")
 
-	accountsColl.Indexes().CreateOne(context.TODO(), mongo.IndexModel{
-		Keys: bson.D{
-			{Key: "username", Value: 1},
-		},
-		Options: options.Index().SetUnique(true),
-	})
+	options := options.Index().SetUnique(true)
+	profilesColl.Indexes().CreateOne(
+		ctx,
+		mongo.IndexModel{Keys: bson.M{"name": 1}, Options: options},
+	)
+	usersColl.Indexes().CreateOne(
+		ctx,
+		mongo.IndexModel{Keys: bson.M{"email": 1}, Options: options},
+	)
+	accountsColl.Indexes().CreateOne(
+		ctx,
+		mongo.IndexModel{Keys: bson.M{"username": 1}, Options: options},
+	)
+	return client
 }

@@ -10,32 +10,25 @@ import (
 	"github.com/xtls/xray-core/infra/conf"
 )
 
-func Generate(profile *models.Profile, account map[string]json.RawMessage) (string, error) {
+func Generate(profile *models.Profile, user *models.User) (string, error) {
+	outbound := conf.OutboundDetourConfig{}
+	if err := json.Unmarshal([]byte(profile.Outbound), &outbound); err != nil {
+		return "", err
+	}
 	// 1. basic information
 	u := new(url.URL)
-	if profile == nil {
-		return "", &Error{ErrNoProfile}
-	}
-	outbound := profile.Outbound
-	if outbound == nil {
-		return "", &Error{ErrNoOutbound}
-	}
 	protocolName := strings.ToLower(outbound.Protocol)
 	if protocolName == "" {
 		return "", &Error{ErrNoProtocol}
 	}
-	protocol, err := NewProtocol(protocolName, *outbound.Settings, account)
+	protocol, err := NewProtocol(protocolName, *outbound.Settings)
 	if err != nil {
 		return "", &Error{err}
 	}
 	// 1.1 protocol
 	u.Scheme = protocolName
 	// 1.2 uuid
-	if id, err := protocol.Id(); err != nil {
-		return "", &Error{err}
-	} else {
-		u.User = url.User(id)
-	}
+	u.User = url.User(user.UUID)
 	// 1.3 remote-host, 1.4 remote-port
 	if host, err := protocol.Host(); err != nil {
 		return "", &Error{err}
@@ -58,7 +51,9 @@ func Generate(profile *models.Profile, account map[string]json.RawMessage) (stri
 	// 2.1 type
 	query.Set("type", network)
 	// 2.2 encryption
-	query.Set("encryption", protocol.Encryption())
+	if protocolName == "vmess" {
+		query.Set("encryption", user.Security)
+	}
 
 	// 3. transport
 	// 3.1 security
@@ -109,7 +104,7 @@ func Generate(profile *models.Profile, account map[string]json.RawMessage) (stri
 			query.Set("alpn", alpn)
 		}
 		// 4.4 flow
-		query.Set("flow", protocol.Flow())
+		query.Set("flow", user.Flow)
 		if pbk, sid, spx, err := getReality(stream); err != nil {
 			return "", &Error{err}
 		} else {

@@ -1,66 +1,63 @@
 package transfer
 
 import (
-	"encoding/json"
+	"reflect"
 
 	"github.com/bionicosmos/aegle/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type UserGet struct {
-	Id         primitive.ObjectID         `json:"id"`
-	Name       string                     `json:"name"`
-	Email      string                     `json:"email"`
-	Level      uint32                     `json:"level"`
-	StartDate  string                     `json:"startDate"`
-	Cycles     int                        `json:"cycles"`
-	Account    map[string]json.RawMessage `json:"account"`
-	ProfileIds []primitive.ObjectID       `json:"profileIds"`
-}
-
-func UserGetFromUser(user *models.User) UserGet {
-	profileIds := make([]primitive.ObjectID, 0)
-	for profileId := range user.Profiles {
-		profileIds = append(profileIds, profileId)
+func FindUserBodyFrom(user *models.User) map[string]any {
+	value := reflect.ValueOf(user)
+	body := make(map[string]any)
+	typ := value.Type()
+	for i := 0; i < value.NumField(); i++ {
+		fieldName := typ.Field(i).Name
+		if fieldName == "NextDate" {
+			continue
+		}
+		if fieldName == "Profiles" {
+			profileNames := make([]string, 0)
+			for _, profile := range user.Profiles {
+				profileNames = append(profileNames, profile.Name)
+			}
+			body["profileNames"] = profileNames
+			continue
+		}
+		body[fieldName] = value.Field(i).Interface()
 	}
-	return UserGet{
-		Id:         user.Id,
-		Name:       user.Name,
-		Email:      user.Email,
-		Level:      user.Level,
-		StartDate:  user.StartDate,
-		Cycles:     user.Cycles,
-		Account:    user.Account,
-		ProfileIds: profileIds,
+	return body
+}
+
+type FindUserProfilesQuery struct {
+	Id     primitive.ObjectID `query:"id"`
+	Base64 bool               `query:"base64"`
+}
+
+type InsertUserBody map[string]any
+
+func (body *InsertUserBody) ToUser() models.User {
+	user := models.User{}
+	value := reflect.ValueOf(user)
+	typ := value.Type()
+	for i := 0; i < value.NumField(); i++ {
+		fieldName := typ.Field(i).Name
+		if fieldName == "id" || fieldName == "Profiles" {
+			continue
+		}
+		value.Field(i).Set(reflect.ValueOf((*body)[fieldName]))
 	}
+	return user
 }
 
-type UserPost struct {
-	Name       string                     `json:"name"`
-	Email      string                     `json:"email"`
-	Level      uint32                     `json:"level"`
-	StartDate  string                     `json:"startDate"`
-	Cycles     int                        `json:"cycles"`
-	NextDate   string                     `json:"nextDate"`
-	Account    map[string]json.RawMessage `json:"account"`
-	ProfileIds []primitive.ObjectID       `json:"profileIds"`
+type UpdateUserDateBody struct {
+	Id       primitive.ObjectID `json:"id,omitempty"`
+	Cycles   int                `json:"cycles,omitempty"`
+	NextDate string             `json:"nextDate,omitempty"`
 }
 
-func (userPost *UserPost) ToUser() models.User {
-	return models.User{
-		Name:      userPost.Name,
-		Email:     userPost.Email,
-		Level:     userPost.Level,
-		StartDate: userPost.StartDate,
-		Cycles:    userPost.Cycles,
-		NextDate:  userPost.NextDate,
-		Account:   userPost.Account,
-		Profiles:  make(map[primitive.ObjectID]string),
-	}
-}
-
-type UserPut struct {
-	Id       string `json:"id"`
-	Cycles   int    `json:"cycles"`
-	NextDate string `json:"nextDate"`
+type UpdateUserProfilesBody struct {
+	Id          primitive.ObjectID `json:"id,omitempty"`
+	ProfileName string             `json:"profileName,omitempty"`
+	Action      string             `json:"action,omitempty"`
 }

@@ -8,15 +8,6 @@ import (
 
 type vmess struct {
 	*conf.VMessOutboundConfig
-	*conf.VMessAccount
-}
-
-func (vmess *vmess) Id() (string, error) {
-	id := vmess.ID
-	if id == "" {
-		return "", ErrNoId
-	}
-	return id, nil
 }
 
 func (vmess *vmess) Host() (string, error) {
@@ -31,22 +22,10 @@ func (vmess *vmess) Host() (string, error) {
 	return getHost(server.Address, server.Port)
 }
 
-func (vmess *vmess) Encryption() string {
-	return vmess.Security
-}
-
-func (*vmess) Flow() string {
-	return ""
-}
-
-func NewVmess(outboundSettings json.RawMessage, userAccount json.RawMessage) (*vmess, error) {
+func NewVmess(outboundSettings json.RawMessage) (*vmess, error) {
 	settings := new(conf.VMessOutboundConfig)
 	if err := json.Unmarshal(outboundSettings, settings); err != nil {
 		return nil, &ParseSettingsError{"VMess", err}
 	}
-	account := new(conf.VMessAccount)
-	if err := json.Unmarshal(userAccount, account); err != nil {
-		return nil, &ParseAccountError{"VMess", err}
-	}
-	return &vmess{VMessOutboundConfig: settings, VMessAccount: account}, nil
+	return &vmess{VMessOutboundConfig: settings}, nil
 }

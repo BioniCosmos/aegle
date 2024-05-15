@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -11,102 +10,54 @@ import (
 )
 
 type Node struct {
-	Id         primitive.ObjectID `json:"id" bson:"_id"`
-	Name       string             `json:"name"`
-	APIAddress string             `json:"apiAddress" bson:"apiAddress"`
+	Id           primitive.ObjectID `json:"id,omitempty" bson:"_id"`
+	Name         string             `json:"name,omitempty"`
+	APIAddress   string             `json:"apiAddress,omitempty" bson:"apiAddress"`
+	ProfileNames []string           `json:"profileNames,omitempty" bson:"profileNames"`
 }
 
 var nodesColl *mongo.Collection
 
-func FindNode(id any) (*Node, error) {
-	var _id primitive.ObjectID
-	switch id := id.(type) {
-	case string:
-		var err error
-		_id, err = primitive.ObjectIDFromHex(id)
-		if err != nil {
-			return nil, err
-		}
-	case primitive.ObjectID:
-		_id = id
-	default:
-		return nil, errors.New("invalid type for id")
-	}
-
-	var node Node
-	return &node, nodesColl.FindOne(context.TODO(), bson.D{
-		{Key: "_id", Value: _id},
-	}).Decode(&node)
+func FindNode(id *primitive.ObjectID) (Node, error) {
+	node := Node{}
+	return node, nodesColl.
+		FindOne(context.Background(), bson.M{"_id": *id}).
+		Decode(&node)
 }
 
-func FindNodes(skip int64, limit int64) ([]Node, error) {
-	cursor, err := nodesColl.Find(context.TODO(), bson.D{}, options.Find().SetSort(bson.D{
-		{Key: "name", Value: 1},
-	}).SetSkip(skip).SetLimit(limit))
+func FindNodes(query *Query) ([]Node, error) {
+	ctx := context.Background()
+	cursor, err := nodesColl.Find(
+		ctx,
+		bson.M{},
+		options.
+			Find().
+			SetSort(bson.M{"name": 1}).
+			SetSkip(query.Skip).
+			SetLimit(query.Limit),
+	)
 	if err != nil {
 		return nil, err
 	}
-
 	var nodes []Node
-	return nodes, cursor.All(context.TODO(), &nodes)
+	return nodes, cursor.All(ctx, &nodes)
 }
 
-func (node *Node) Insert() error {
+func InsertNode(ctx context.Context, node *Node) error {
 	node.Id = primitive.NewObjectID()
-	_, err := nodesColl.InsertOne(context.TODO(), node)
+	_, err := nodesColl.InsertOne(ctx, node)
 	return err
 }
 
-func (node *Node) Update() error {
-	_, err := nodesColl.UpdateByID(context.TODO(), node.Id, bson.D{
-		{Key: "$set", Value: node},
-	})
-	return err
+func UpdateNode(ctx context.Context, filter any, update any) (Node, error) {
+	node := Node{}
+	return node, nodesColl.FindOneAndUpdate(ctx, filter, update).Decode(&node)
 }
 
-func DeleteNode(id string) error {
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-	_, err = nodesColl.DeleteOne(context.TODO(), bson.D{
-		{Key: "_id", Value: _id},
-	})
-	return err
-}
-
-type NodeResponse struct {
-	Node     Node      `json:"node,omitempty"`
-	Profiles []Profile `json:"profiles,omitempty"`
-}
-
-func NodeProfilesAggregateQuery(skip int64, limit int64) ([]NodeResponse, error) {
-	pipeline := bson.A{
-		bson.M{"$lookup": bson.M{
-			"from":         "profiles",
-			"localField":   "_id",
-			"foreignField": "nodeId",
-			"as":           "profiles",
-		}},
-		bson.M{"$project": bson.M{
-			"_id": 0,
-			"node": bson.M{
-				"_id":        "$_id",
-				"name":       "$name",
-				"apiAddress": "$apiAddress",
-			},
-			"profiles": "$profiles",
-		}},
-	}
-	cursor, err := nodesColl.Aggregate(context.Background(), pipeline)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]NodeResponse, 0)
-	if err := cursor.All(context.Background(), &res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
+func DeleteNode(ctx context.Context, id *primitive.ObjectID) (Node, error) {
+	node := Node{}
+	return node, nodesColl.FindOneAndDelete(
+		ctx,
+		bson.M{"_id": *id},
+	).Decode(&node)
 }

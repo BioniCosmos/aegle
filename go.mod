@@ -3,7 +3,6 @@ module github.com/bionicosmos/aegle
 go 1.22.3
 
 require (
-	github.com/go-co-op/gocron v1.37.0
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/storage/mongodb v1.3.9
 	github.com/xtls/xray-core v1.8.11
@@ -36,7 +35,6 @@ require (
 	github.com/refraction-networking/utls v1.6.6 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sagernet/sing v0.3.8 // indirect
 	github.com/sagernet/sing-shadowsocks v0.2.6 // indirect
 	github.com/seiflotfy/cuckoofilter v0.0.0-20220411075957-e3b120b3f5fb // indirect
@@ -51,7 +49,6 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/xtls/reality v0.0.0-20240429224917-ecc4401070cc // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240424034433-3c2c7870ae76 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect

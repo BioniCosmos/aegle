@@ -29,9 +29,7 @@ message RemoveUserRequest {
   string email = 2;
 }
 
-message Response {
-  string message = 1;
-}
+message Response {}
 
 message User {
   string email = 1;
