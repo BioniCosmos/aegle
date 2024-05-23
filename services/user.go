@@ -63,7 +63,7 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 			if err := models.UpdateUser(
 				ctx,
 				bson.M{"_id": body.Id},
-				bson.M{arrayAction: arrayFilter},
+				bson.M{arrayAction: bson.M{"profiles": arrayFilter}},
 			); err != nil {
 				return nil, err
 			}
@@ -162,7 +162,7 @@ func CheckUser() error {
 	errCh := make(chan error)
 	for _, user := range users {
 		nextDate, err := time.Parse(
-			"2006-01-02T15:04:05.000+07:00",
+			time.RFC3339,
 			strings.Split(user.NextDate, "[")[0],
 		)
 		if err != nil {

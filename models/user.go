@@ -57,6 +57,7 @@ func FindUsers(query *Query) ([]User, error) {
 
 func InsertUser(ctx context.Context, user *User) error {
 	user.Id = primitive.NewObjectID()
+	user.Profiles = make([]ProfileSubscription, 0)
 	_, err := usersColl.InsertOne(ctx, user)
 	return err
 }

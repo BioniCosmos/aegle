@@ -14,15 +14,19 @@ type Server struct {
 	UnimplementedXrayServer
 }
 
+const path = "/usr/local/etc/xray/inbounds.json"
+
+var ErrNoInbound = errors.New("inbound not found")
+
 func (*Server) AddInbound(
 	_ context.Context,
 	req *AddInboundRequest,
 ) (*Response, error) {
-	store, err := storeRead("TODO")
+	store, err := storeRead(path)
 	if err != nil {
 		return nil, err
 	}
-	m := make(object)
+	m := make(map[string]any)
 	if err := json.Unmarshal([]byte(req.GetInbound()), &m); err != nil {
 		return nil, err
 	}
@@ -35,13 +39,13 @@ func (*Server) RemoveInbound(
 	_ context.Context,
 	req *RemoveInboundRequest,
 ) (*Response, error) {
-	store, err := storeRead("TODO")
+	store, err := storeRead(path)
 	if err != nil {
 		return nil, err
 	}
 	store.inbounds = slices.DeleteFunc(
 		store.inbounds,
-		func(inbound object) bool {
+		func(inbound map[string]any) bool {
 			return inbound["tag"] == req.GetName()
 		},
 	)
@@ -52,7 +56,7 @@ func (*Server) AddUser(
 	_ context.Context,
 	req *AddUserRequest,
 ) (*Response, error) {
-	store, err := storeRead("TODO")
+	store, err := storeRead(path)
 	if err != nil {
 		return nil, err
 	}
@@ -63,19 +67,23 @@ func (*Server) AddUser(
 	uuid := user.GetUuid()
 	flow := user.GetFlow()
 
-	inbound := findInbound(&store, req.GetProfileName())
+	inbound, err := findInbound(&store, req.GetProfileName())
+	if err != nil {
+		return nil, err
+	}
 	proto := inbound["protocol"]
-	var client object
+	var client map[string]any
 	switch proto {
 	case "vless":
-		client = object{"id": uuid, "level": level, "email": email, "flow": flow}
+		client = map[string]any{"id": uuid, "level": level, "email": email, "flow": flow}
 	case "vmess":
-		client = object{"id": uuid, "level": level, "email": email}
+		client = map[string]any{"id": uuid, "level": level, "email": email}
 	case "trojan":
-		client = object{"password": uuid, "level": level, "email": email}
+		client = map[string]any{"password": uuid, "level": level, "email": email}
 	}
-	settings := inbound["settings"].(object)
-	settings["clients"] = append(settings["clients"].([]object), client)
+	fillNil(inbound)
+	settings := inbound["settings"].(map[string]any)
+	settings["clients"] = append(settings["clients"].([]any), client)
 	return store.apply()
 }
 
@@ -83,26 +91,29 @@ func (*Server) RemoveUser(
 	_ context.Context,
 	req *RemoveUserRequest,
 ) (*Response, error) {
-	store, err := storeRead("TODO")
+	store, err := storeRead(path)
 	if err != nil {
 		return nil, err
 	}
-	inbound := findInbound(&store, req.GetProfileName())
-	settings := inbound["settings"].(object)
+	inbound, err := findInbound(&store, req.GetProfileName())
+	if err != nil {
+		return nil, err
+	}
+	fillNil(inbound)
+	settings := inbound["settings"].(map[string]any)
 	settings["clients"] = slices.DeleteFunc(
-		settings["clients"].([]object),
-		func(client object) bool {
-			return client["email"] == req.GetEmail()
+		settings["clients"].([]any),
+		func(client any) bool {
+			return client.(map[string]any)["email"] == req.GetEmail()
 		},
 	)
 	return store.apply()
 }
 
 type store struct {
-	inbounds []object
+	inbounds []map[string]any
 	path     string
 }
-type object map[string]any
 
 var mutex sync.Mutex
 
@@ -113,18 +124,18 @@ func storeRead(path string) (store, error) {
 		if !errors.Is(err, os.ErrNotExist) {
 			return store{}, err
 		}
-		data = []byte("{}")
+		data = []byte(`{"inbounds":[]}`)
 	}
-	m := make(object)
+	m := struct{ Inbounds []map[string]any }{}
 	if err := json.Unmarshal(data, &m); err != nil {
 		return store{}, err
 	}
-	return store{inbounds: m["inbounds"].([]object), path: path}, nil
+	return store{inbounds: m.Inbounds, path: path}, nil
 }
 
 func (store *store) apply() (*Response, error) {
 	defer mutex.Unlock()
-	data, err := json.Marshal(object{"inbounds": store.inbounds})
+	data, err := json.Marshal(map[string]any{"inbounds": store.inbounds})
 	if err != nil {
 		return nil, err
 	}
@@ -137,13 +148,25 @@ func (store *store) apply() (*Response, error) {
 	if err != nil {
 		return nil, errors.New(string(message))
 	}
-	_, err = exec.Command("systemctl", "reload", "xray.service").Output()
+	_, err = exec.Command("systemctl", "restart", "xray.service").Output()
 	return nil, err
 }
 
-func findInbound(store *store, name string) object {
-	i := slices.IndexFunc(store.inbounds, func(inbound object) bool {
+func findInbound(store *store, name string) (map[string]any, error) {
+	i := slices.IndexFunc(store.inbounds, func(inbound map[string]any) bool {
 		return inbound["tag"] == name
 	})
-	return store.inbounds[i]
+	if i == -1 {
+		return nil, ErrNoInbound
+	}
+	return store.inbounds[i], nil
+}
+
+func fillNil(inbound map[string]any) {
+	if inbound["settings"] == nil {
+		inbound["settings"] = make(map[string]any)
+	}
+	if settings := inbound["settings"].(map[string]any); settings["clients"] == nil {
+		settings["clients"] = make([]map[string]any, 0)
+	}
 }

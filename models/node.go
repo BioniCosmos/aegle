@@ -45,6 +45,7 @@ func FindNodes(query *Query) ([]Node, error) {
 
 func InsertNode(ctx context.Context, node *Node) error {
 	node.Id = primitive.NewObjectID()
+	node.ProfileNames = make([]string, 0)
 	_, err := nodesColl.InsertOne(ctx, node)
 	return err
 }

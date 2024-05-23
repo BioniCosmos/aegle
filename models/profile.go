@@ -35,6 +35,7 @@ func FindProfiles() ([]Profile, error) {
 }
 
 func InsertProfile(ctx context.Context, profile *Profile) error {
+	profile.UserIds = make([]primitive.ObjectID, 0)
 	_, err := profilesColl.InsertOne(ctx, profile)
 	return err
 }
