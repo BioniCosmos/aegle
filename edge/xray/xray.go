@@ -8,13 +8,13 @@ import (
 	"os/exec"
 	"slices"
 	"sync"
+
+	"github.com/bionicosmos/aegle/config"
 )
 
 type Server struct {
 	UnimplementedXrayServer
 }
-
-const path = "/usr/local/etc/xray/inbounds.json"
 
 var ErrNoInbound = errors.New("inbound not found")
 
@@ -22,7 +22,7 @@ func (*Server) AddInbound(
 	_ context.Context,
 	req *AddInboundRequest,
 ) (*Response, error) {
-	store, err := storeRead(path)
+	store, err := storeRead()
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (*Server) RemoveInbound(
 	_ context.Context,
 	req *RemoveInboundRequest,
 ) (*Response, error) {
-	store, err := storeRead(path)
+	store, err := storeRead()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (*Server) AddUser(
 	_ context.Context,
 	req *AddUserRequest,
 ) (*Response, error) {
-	store, err := storeRead(path)
+	store, err := storeRead()
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (*Server) RemoveUser(
 	_ context.Context,
 	req *RemoveUserRequest,
 ) (*Response, error) {
-	store, err := storeRead(path)
+	store, err := storeRead()
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,8 @@ type store struct {
 
 var mutex sync.Mutex
 
-func storeRead(path string) (store, error) {
+func storeRead() (store, error) {
+	path := config.C.XrayConfig
 	mutex.Lock()
 	data, err := os.ReadFile(path)
 	if err != nil {

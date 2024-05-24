@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/bionicosmos/aegle/config"
@@ -18,13 +20,16 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < 2 || !slices.Contains([]string{"center", "edge"}, os.Args[1]) {
 		fmt.Println(`Commands:
-  center
-  edge`)
-		return
+    center
+    edge`)
+		os.Exit(2)
 	}
-	config.Init()
+	params := flag.NewFlagSet("Aegle", flag.ExitOnError)
+	configPath := params.String("config", "./config.json", "path of the configuration file")
+	params.Parse(os.Args[2:])
+	config.Init(*configPath)
 	if os.Args[1] == "edge" {
 		edge.Start()
 	}
@@ -59,5 +64,5 @@ func main() {
 	app.Use(logger.New())
 	routes.Init(app)
 	handlers.SessionInit()
-	log.Fatal(app.Listen(config.Conf.Listen))
+	log.Fatal(app.Listen(config.C.Listen))
 }

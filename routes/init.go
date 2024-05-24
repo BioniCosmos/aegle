@@ -9,10 +9,10 @@ import (
 )
 
 func Init(app *fiber.App) {
-	app.Static("/", config.Conf.Static.Home)
-	app.Static("/dashboard/", config.Conf.Static.Dashboard)
+	app.Static("/", config.C.Home)
+	app.Static("/dashboard/", config.C.Dashboard)
 	app.Use("/dashboard/", func(c *fiber.Ctx) error {
-		return c.SendFile(path.Join(config.Conf.Static.Dashboard, "index.html"))
+		return c.SendFile(path.Join(config.C.Dashboard, "index.html"))
 	})
 
 	app.Use("/api", handlers.AuthorizeAccount)

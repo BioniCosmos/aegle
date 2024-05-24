@@ -1,5 +1,1 @@
-*.json
-home
-dashboard
-dist
-cert.pem
+config.json

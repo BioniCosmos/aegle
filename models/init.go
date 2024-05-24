@@ -14,12 +14,12 @@ func Init() *mongo.Client {
 	ctx := context.Background()
 	client, err := mongo.Connect(
 		ctx,
-		options.Client().ApplyURI(config.Conf.DatabaseURL),
+		options.Client().ApplyURI(config.C.DatabaseURL),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	db := client.Database(config.Conf.DatabaseName)
+	db := client.Database(config.C.DatabaseName)
 	nodesColl = db.Collection("nodes")
 	profilesColl = db.Collection("profiles")
 	usersColl = db.Collection("users")

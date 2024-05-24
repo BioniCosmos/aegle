@@ -19,8 +19,8 @@ func SessionInit() {
 	store = session.New(session.Config{
 		Expiration: time.Hour * 24 * 30,
 		Storage: mongodb.New(mongodb.Config{
-			ConnectionURI: config.Conf.DatabaseURL,
-			Database:      config.Conf.DatabaseName,
+			ConnectionURI: config.C.DatabaseURL,
+			Database:      config.C.DatabaseName,
 		}),
 	})
 }

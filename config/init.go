@@ -2,39 +2,36 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
-	"flag"
 	"log"
 	"os"
 )
 
-type config struct {
-	Listen       string `json:"listen"`
-	DatabaseURL  string `json:"databaseURL"`
-	DatabaseName string `json:"databaseName"`
-	Cert         string `json:"cert"`
-	Static       struct {
-		Home      string `json:"home"`
-		Dashboard string `json:"dashboard"`
-	} `json:"static"`
+type Config struct {
+	Listen       string `json:"listen,omitempty"`
+	DatabaseURL  string `json:"databaseURL,omitempty"`
+	DatabaseName string `json:"databaseName,omitempty"`
+	Home         string `json:"home,omitempty"`
+	Dashboard    string `json:"dashboard,omitempty"`
+	XrayConfig   string `json:"xrayConfig,omitempty"`
 }
 
-var Conf config
+var C Config
 
-func Init() {
-	configFlag := flag.String("config", "./config.json", "the configuration file")
-	flag.Parse()
-	file, err := os.ReadFile(*configFlag)
+func Init(path string) {
+	file, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := json.Unmarshal(file, &Conf); err != nil {
+	if err := json.Unmarshal(file, &C); err != nil {
 		log.Fatal(err)
 	}
-	if Conf.DatabaseURL == "" {
-		log.Fatal(errors.New("parsing config: no databaseURL specified"))
+	if C.DatabaseURL == "" {
+		log.Fatal("parsing config: no databaseURL specified")
 	}
-	if Conf.DatabaseName == "" {
-		Conf.DatabaseName = "aegle"
+	if C.DatabaseName == "" {
+		C.DatabaseName = "aegle"
+	}
+	if C.XrayConfig == "" {
+		C.XrayConfig = "/usr/local/etc/xray/inbounds.json"
 	}
 }
