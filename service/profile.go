@@ -1,16 +1,16 @@
-package services
+package service
 
 import (
 	"context"
 
 	"github.com/bionicosmos/aegle/edge"
 	pb "github.com/bionicosmos/aegle/edge/xray"
-	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func InsertProfile(profile *models.Profile, inbound string) error {
+func InsertProfile(profile *model.Profile, inbound string) error {
 	ctx := context.Background()
 	session, err := client.StartSession()
 	if err != nil {
@@ -20,10 +20,10 @@ func InsertProfile(profile *models.Profile, inbound string) error {
 	_, err = session.WithTransaction(
 		ctx,
 		func(ctx mongo.SessionContext) (interface{}, error) {
-			if err := models.InsertProfile(ctx, profile); err != nil {
+			if err := model.InsertProfile(ctx, profile); err != nil {
 				return nil, err
 			}
-			node, err := models.UpdateNode(
+			node, err := model.UpdateNode(
 				ctx,
 				bson.M{"_id": profile.NodeId},
 				bson.M{"$push": bson.M{"profileNames": profile.Name}},
@@ -53,11 +53,11 @@ func DeleteProfile(name string) error {
 	_, err = session.WithTransaction(
 		ctx,
 		func(ctx mongo.SessionContext) (interface{}, error) {
-			profile, err := models.DeleteProfile(ctx, name)
+			profile, err := model.DeleteProfile(ctx, name)
 			if err != nil {
 				return nil, err
 			}
-			node, err := models.UpdateNode(
+			node, err := model.UpdateNode(
 				ctx,
 				bson.M{"_id": profile.NodeId},
 				bson.M{"$pull": bson.M{"profileNames": name}},
@@ -65,7 +65,7 @@ func DeleteProfile(name string) error {
 			if err != nil {
 				return nil, err
 			}
-			err = models.UpdateUsers(
+			err = model.UpdateUsers(
 				ctx,
 				bson.M{"_id": bson.M{"$in": profile.UserIds}},
 				bson.M{"$pull": bson.M{"profiles": bson.M{"name": name}}},

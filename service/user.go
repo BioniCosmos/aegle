@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 
 	"github.com/bionicosmos/aegle/edge"
 	pb "github.com/bionicosmos/aegle/edge/xray"
-	"github.com/bionicosmos/aegle/handlers/transfer"
-	"github.com/bionicosmos/aegle/models"
-	"github.com/bionicosmos/aegle/services/subscription"
+	"github.com/bionicosmos/aegle/handler/transfer"
+	"github.com/bionicosmos/aegle/model"
+	"github.com/bionicosmos/aegle/service/subscription"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -37,7 +37,7 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 	_, err = session.WithTransaction(
 		ctx,
 		func(ctx mongo.SessionContext) (interface{}, error) {
-			profile, err := models.UpdateProfile(
+			profile, err := model.UpdateProfile(
 				ctx,
 				bson.M{"name": body.ProfileName},
 				bson.M{arrayAction: bson.M{"userIds": body.Id}},
@@ -45,7 +45,7 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 			if err != nil {
 				return nil, err
 			}
-			user, err := models.FindUser(&body.Id)
+			user, err := model.FindUser(&body.Id)
 			if err != nil {
 				return nil, err
 			}
@@ -60,14 +60,14 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 			if body.Action == "remove" {
 				arrayFilter = bson.M{"name": body.ProfileName}
 			}
-			if err := models.UpdateUser(
+			if err := model.UpdateUser(
 				ctx,
 				bson.M{"_id": body.Id},
 				bson.M{arrayAction: bson.M{"profiles": arrayFilter}},
 			); err != nil {
 				return nil, err
 			}
-			node, err := models.FindNode(&profile.NodeId)
+			node, err := model.FindNode(&profile.NodeId)
 			if err != nil {
 				return nil, err
 			}
@@ -107,14 +107,14 @@ func DeleteUser(id *primitive.ObjectID) error {
 	_, err = session.WithTransaction(
 		ctx,
 		func(ctx mongo.SessionContext) (interface{}, error) {
-			user, err := models.DeleteUser(ctx, id)
+			user, err := model.DeleteUser(ctx, id)
 			if err != nil {
 				return nil, err
 			}
 			wg := sync.WaitGroup{}
 			errCh := make(chan error)
 			for _, profile := range user.Profiles {
-				profile, err := models.UpdateProfile(
+				profile, err := model.UpdateProfile(
 					ctx,
 					bson.M{"name": profile.Name},
 					bson.M{"$pull": bson.M{"userIds": user.Id}},
@@ -122,7 +122,7 @@ func DeleteUser(id *primitive.ObjectID) error {
 				if err != nil {
 					return nil, err
 				}
-				node, err := models.FindNode(&profile.NodeId)
+				node, err := model.FindNode(&profile.NodeId)
 				if err != nil {
 					return nil, err
 				}
@@ -154,7 +154,7 @@ func DeleteUser(id *primitive.ObjectID) error {
 }
 
 func CheckUser() error {
-	users, err := models.FindUsers(&models.Query{})
+	users, err := model.FindUsers(&model.Query{})
 	if err != nil {
 		return err
 	}

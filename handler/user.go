@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/bionicosmos/aegle/handlers/transfer"
-	"github.com/bionicosmos/aegle/models"
-	"github.com/bionicosmos/aegle/services"
+	"github.com/bionicosmos/aegle/handler/transfer"
+	"github.com/bionicosmos/aegle/model"
+	"github.com/bionicosmos/aegle/service"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,7 +19,7 @@ func FindUser(c *fiber.Ctx) error {
 	if err := c.ParamsParser(&params); err != nil {
 		return &ParseError{err}
 	}
-	user, err := models.FindUser(&params.Id)
+	user, err := model.FindUser(&params.Id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
@@ -30,11 +30,11 @@ func FindUser(c *fiber.Ctx) error {
 }
 
 func FindUsers(c *fiber.Ctx) error {
-	query := models.Query{}
+	query := model.Query{}
 	if err := c.QueryParser(&query); err != nil {
 		return &ParseError{err}
 	}
-	users, err := models.FindUsers(&query)
+	users, err := model.FindUsers(&query)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func FindUserProfiles(c *fiber.Ctx) error {
 	if err := c.QueryParser(&query); err != nil {
 		return &ParseError{err}
 	}
-	user, err := models.FindUser(&query.Id)
+	user, err := model.FindUser(&query.Id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
@@ -74,7 +74,7 @@ func InsertUser(c *fiber.Ctx) error {
 		return &ParseError{err}
 	}
 	user := userPost.ToUser()
-	if err := models.InsertUser(context.Background(), &user); err != nil {
+	if err := model.InsertUser(context.Background(), &user); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusCreated)
@@ -85,7 +85,7 @@ func UpdateUserDate(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return &ParseError{err}
 	}
-	if err := models.UpdateUser(
+	if err := model.UpdateUser(
 		context.Background(),
 		bson.M{"_id": body.Id},
 		bson.M{
@@ -101,7 +101,7 @@ func UpdateUserProfiles(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return &ParseError{err}
 	}
-	if err := services.UpdateUserProfiles(&body); err != nil {
+	if err := service.UpdateUserProfiles(&body); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)
@@ -112,7 +112,7 @@ func DeleteUser(c *fiber.Ctx) error {
 	if err := c.ParamsParser(&params); err != nil {
 		return &ParseError{err}
 	}
-	if err := services.DeleteUser(&params.Id); err != nil {
+	if err := service.DeleteUser(&params.Id); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)

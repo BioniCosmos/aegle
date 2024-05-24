@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bionicosmos/aegle/config"
-	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/storage/mongodb"
@@ -31,11 +31,11 @@ func SignInAccount(c *fiber.Ctx) error {
 		return err
 	}
 	if session.Fresh() {
-		account := new(models.Account)
+		account := new(model.Account)
 		if err := c.BodyParser(account); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
-		inner, err := models.FindAccount(account.Username)
+		inner, err := model.FindAccount(account.Username)
 		if err != nil {
 			if errors.Is(err, mongo.ErrNoDocuments) {
 				return fiber.NewError(fiber.StatusUnauthorized, "User does not exist.")
@@ -53,11 +53,11 @@ func SignInAccount(c *fiber.Ctx) error {
 }
 
 func SignUpAccount(c *fiber.Ctx) error {
-	account := new(models.Account)
+	account := new(model.Account)
 	if err := c.BodyParser(account); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	_, err := models.FindAccount(account.Username)
+	_, err := model.FindAccount(account.Username)
 	if err != nil && err != mongo.ErrNoDocuments {
 		return err
 	}
@@ -97,11 +97,11 @@ func ChangeAccountPassword(c *fiber.Ctx) error {
 	if !ok {
 		return errors.New("cannot get your username from the session")
 	}
-	inner, err := models.FindAccount(username)
+	inner, err := model.FindAccount(username)
 	if err != nil {
 		return err
 	}
-	account := &models.Account{Username: username, Password: password.Old}
+	account := &model.Account{Username: username, Password: password.Old}
 	if !account.PasswordIsCorrect(inner) {
 		return fiber.ErrUnauthorized
 	}
@@ -121,7 +121,7 @@ func DeleteAccount(c *fiber.Ctx) error {
 	if !ok {
 		return errors.New("cannot get your username from the session")
 	}
-	if err := models.DeleteAccount(username); err != nil {
+	if err := model.DeleteAccount(username); err != nil {
 		return err
 	}
 	return c.JSON(fiber.NewError(fiber.StatusOK))

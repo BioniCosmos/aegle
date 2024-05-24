@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/bionicosmos/aegle/edge"
 	pb "github.com/bionicosmos/aegle/edge/xray"
-	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,11 +22,11 @@ func DeleteNode(id *primitive.ObjectID) error {
 	_, err = session.WithTransaction(
 		ctx,
 		func(ctx mongo.SessionContext) (interface{}, error) {
-			node, err := models.DeleteNode(ctx, id)
+			node, err := model.DeleteNode(ctx, id)
 			if err != nil {
 				return nil, err
 			}
-			profiles, err := models.DeleteProfiles(
+			profiles, err := model.DeleteProfiles(
 				ctx,
 				bson.M{"name": bson.M{"$in": node.ProfileNames}},
 			)
@@ -34,7 +34,7 @@ func DeleteNode(id *primitive.ObjectID) error {
 				return nil, err
 			}
 			for _, profile := range profiles {
-				if err := models.UpdateUsers(
+				if err := model.UpdateUsers(
 					ctx,
 					bson.M{"_id": bson.M{"$in": profile.UserIds}},
 					bson.M{

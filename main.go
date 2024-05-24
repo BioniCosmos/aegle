@@ -11,10 +11,9 @@ import (
 
 	"github.com/bionicosmos/aegle/config"
 	"github.com/bionicosmos/aegle/edge"
-	"github.com/bionicosmos/aegle/handlers"
-	"github.com/bionicosmos/aegle/models"
-	"github.com/bionicosmos/aegle/routes"
-	"github.com/bionicosmos/aegle/services"
+	"github.com/bionicosmos/aegle/handler"
+	"github.com/bionicosmos/aegle/model"
+	"github.com/bionicosmos/aegle/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
@@ -33,14 +32,14 @@ func main() {
 	if os.Args[1] == "edge" {
 		edge.Start()
 	}
-	services.Init(models.Init())
-	if err := services.CheckUser(); err != nil {
+	service.Init(model.Init())
+	if err := service.CheckUser(); err != nil {
 		log.Fatal(err)
 	}
 	ticker := time.NewTicker(24 * time.Hour)
 	go func() {
 		for range ticker.C {
-			if err := services.CheckUser(); err != nil {
+			if err := service.CheckUser(); err != nil {
 				log.Print(err)
 			}
 		}
@@ -52,7 +51,7 @@ func main() {
 			if errors.As(err, &e) {
 				code = e.Code
 			}
-			var parseError *handlers.ParseError
+			var parseError *handler.ParseError
 			if errors.As(err, &parseError) {
 				code = fiber.StatusBadRequest
 			}
@@ -62,7 +61,7 @@ func main() {
 		},
 	})
 	app.Use(logger.New())
-	routes.Init(app)
-	handlers.SessionInit()
+	handler.Init(app)
+	handler.SessionInit()
 	log.Fatal(app.Listen(config.C.Listen))
 }

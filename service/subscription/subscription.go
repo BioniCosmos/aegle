@@ -5,12 +5,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/bionicosmos/aegle/models"
-	"github.com/bionicosmos/aegle/services/subscription/common"
+	"github.com/bionicosmos/aegle/model"
+	"github.com/bionicosmos/aegle/service/subscription/common"
 	"github.com/xtls/xray-core/infra/conf"
 )
 
-func Generate(profile *models.Profile, user *models.User) (string, error) {
+func Generate(profile *model.Profile, user *model.User) (string, error) {
 	outbound := conf.OutboundDetourConfig{}
 	if err := json.Unmarshal([]byte(profile.Outbound), &outbound); err != nil {
 		return "", err

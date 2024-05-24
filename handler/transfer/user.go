@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/model"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func FindUserBodyFrom(user *models.User) map[string]any {
+func FindUserBodyFrom(user *model.User) map[string]any {
 	value := reflect.ValueOf(*user)
 	body := make(map[string]any)
 	typ := value.Type()
@@ -47,8 +47,8 @@ type InsertUserBody struct {
 	Security  string `json:"security,omitempty"`
 }
 
-func (body *InsertUserBody) ToUser() models.User {
-	return models.User{
+func (body *InsertUserBody) ToUser() model.User {
+	return model.User{
 		Name:      body.Name,
 		Email:     body.Email,
 		Level:     body.Level,

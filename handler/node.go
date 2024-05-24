@@ -1,12 +1,12 @@
-package handlers
+package handler
 
 import (
 	"context"
 	"errors"
 
-	"github.com/bionicosmos/aegle/handlers/transfer"
-	"github.com/bionicosmos/aegle/models"
-	"github.com/bionicosmos/aegle/services"
+	"github.com/bionicosmos/aegle/handler/transfer"
+	"github.com/bionicosmos/aegle/model"
+	"github.com/bionicosmos/aegle/service"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +17,7 @@ func FindNode(c *fiber.Ctx) error {
 	if err := c.ParamsParser(&params); err != nil {
 		return &ParseError{err}
 	}
-	node, err := models.FindNode(&params.Id)
+	node, err := model.FindNode(&params.Id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
@@ -28,11 +28,11 @@ func FindNode(c *fiber.Ctx) error {
 }
 
 func FindNodes(c *fiber.Ctx) error {
-	query := models.Query{}
+	query := model.Query{}
 	if err := c.QueryParser(&query); err != nil {
 		return &ParseError{err}
 	}
-	nodes, err := models.FindNodes(&query)
+	nodes, err := model.FindNodes(&query)
 	if err != nil {
 		return err
 	}
@@ -40,22 +40,22 @@ func FindNodes(c *fiber.Ctx) error {
 }
 
 func InsertNode(c *fiber.Ctx) error {
-	node := models.Node{}
+	node := model.Node{}
 	if err := c.BodyParser(&node); err != nil {
 		return &ParseError{err}
 	}
-	if err := models.InsertNode(context.Background(), &node); err != nil {
+	if err := model.InsertNode(context.Background(), &node); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusCreated)
 }
 
 func UpdateNode(c *fiber.Ctx) error {
-	node := models.Node{}
+	node := model.Node{}
 	if err := c.BodyParser(&node); err != nil {
 		return &ParseError{err}
 	}
-	if _, err := models.UpdateNode(
+	if _, err := model.UpdateNode(
 		context.Background(),
 		bson.M{"_id": node.Id},
 		bson.M{"$set": node},
@@ -70,7 +70,7 @@ func DeleteNode(c *fiber.Ctx) error {
 	if err := c.ParamsParser(&params); err != nil {
 		return err
 	}
-	if err := services.DeleteNode(&params.Id); err != nil {
+	if err := service.DeleteNode(&params.Id); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)

@@ -1,7 +1,7 @@
 package transfer
 
 import (
-	"github.com/bionicosmos/aegle/models"
+	"github.com/bionicosmos/aegle/model"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -12,8 +12,8 @@ type InsertProfileBody struct {
 	NodeId   primitive.ObjectID `json:"nodeId,omitempty"`
 }
 
-func (body *InsertProfileBody) ToProfile() (*models.Profile, string) {
-	return &models.Profile{
+func (body *InsertProfileBody) ToProfile() (*model.Profile, string) {
+	return &model.Profile{
 		Name:     body.Name,
 		Outbound: body.Outbound,
 		NodeId:   body.NodeId,
