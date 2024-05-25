@@ -17,7 +17,7 @@ type Config struct {
 
 var C Config
 
-func Init(path string) {
+func Init(path string, server string) {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
@@ -25,13 +25,16 @@ func Init(path string) {
 	if err := json.Unmarshal(file, &C); err != nil {
 		log.Fatal(err)
 	}
-	if C.DatabaseURL == "" {
-		log.Fatal("parsing config: no databaseURL specified")
-	}
-	if C.DatabaseName == "" {
-		C.DatabaseName = "aegle"
-	}
-	if C.XrayConfig == "" {
-		C.XrayConfig = "/usr/local/etc/xray/inbounds.json"
+	if server == "center" {
+		if C.DatabaseURL == "" {
+			log.Fatal("parsing config: no databaseURL specified")
+		}
+		if C.DatabaseName == "" {
+			C.DatabaseName = "aegle"
+		}
+	} else {
+		if C.XrayConfig == "" {
+			C.XrayConfig = "/usr/local/etc/xray/inbounds.json"
+		}
 	}
 }

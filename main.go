@@ -28,7 +28,7 @@ func main() {
 	params := flag.NewFlagSet("Aegle", flag.ExitOnError)
 	configPath := params.String("config", "./config.json", "path of the configuration file")
 	params.Parse(os.Args[2:])
-	config.Init(*configPath)
+	config.Init(*configPath, os.Args[1])
 	if os.Args[1] == "edge" {
 		edge.Start()
 	}
