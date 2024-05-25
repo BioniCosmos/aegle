@@ -168,6 +168,6 @@ func fillNil(inbound map[string]any) {
 		inbound["settings"] = make(map[string]any)
 	}
 	if settings := inbound["settings"].(map[string]any); settings["clients"] == nil {
-		settings["clients"] = make([]map[string]any, 0)
+		settings["clients"] = make([]any, 0)
 	}
 }
