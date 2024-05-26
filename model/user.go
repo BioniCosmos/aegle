@@ -37,17 +37,9 @@ func FindUser(id *primitive.ObjectID) (User, error) {
 		Decode(&user)
 }
 
-func FindUsers(query *Query) ([]User, error) {
+func FindUsers(options *options.FindOptions) ([]User, error) {
 	ctx := context.Background()
-	cursor, err := usersColl.Find(
-		ctx,
-		bson.M{},
-		options.
-			Find().
-			SetSort(bson.M{"name": 1}).
-			SetSkip(query.Skip).
-			SetLimit(query.Limit),
-	)
+	cursor, err := usersColl.Find(ctx, bson.M{}, options)
 	if err != nil {
 		return nil, err
 	}

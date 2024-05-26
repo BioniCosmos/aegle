@@ -12,6 +12,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+func FindNodes(page int) (Pagination[model.Node], error) {
+	return paginate(page, "nodes", model.FindNodes)
+}
+
 func DeleteNode(id *primitive.ObjectID) error {
 	ctx := context.Background()
 	session, err := client.StartSession()

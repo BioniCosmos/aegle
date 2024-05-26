@@ -26,23 +26,15 @@ func FindUser(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	return c.JSON(transfer.FindUserBodyFrom(&user))
+	return c.JSON(user)
 }
 
 func FindUsers(c *fiber.Ctx) error {
-	query := model.Query{}
-	if err := c.QueryParser(&query); err != nil {
-		return &ParseError{err}
-	}
-	users, err := model.FindUsers(&query)
+	pagination, err := service.FindUsers(c.QueryInt("page", 1))
 	if err != nil {
 		return err
 	}
-	body := make([]map[string]any, 0)
-	for _, user := range users {
-		body = append(body, transfer.FindUserBodyFrom(&user))
-	}
-	return c.JSON(body)
+	return c.JSON(pagination)
 }
 
 func FindUserProfiles(c *fiber.Ctx) error {

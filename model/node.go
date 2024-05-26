@@ -25,16 +25,12 @@ func FindNode(id *primitive.ObjectID) (Node, error) {
 		Decode(&node)
 }
 
-func FindNodes(query *Query) ([]Node, error) {
+func FindNodes(options *options.FindOptions) ([]Node, error) {
 	ctx := context.Background()
 	cursor, err := nodesColl.Find(
 		ctx,
 		bson.M{},
-		options.
-			Find().
-			SetSort(bson.M{"name": 1}).
-			SetSkip(query.Skip).
-			SetLimit(query.Limit),
+		options.SetSort(bson.M{"name": 1}),
 	)
 	if err != nil {
 		return nil, err

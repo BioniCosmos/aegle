@@ -15,9 +15,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var ErrUnsupportedAction = errors.New("unsupported action")
+
+func FindUsers(page int) (Pagination[model.User], error) {
+	return paginate(page, "users", model.FindUsers)
+}
 
 func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 	actionMap := map[string]string{
@@ -154,7 +159,7 @@ func DeleteUser(id *primitive.ObjectID) error {
 }
 
 func CheckUser() error {
-	users, err := model.FindUsers(&model.Query{})
+	users, err := model.FindUsers(options.Find())
 	if err != nil {
 		return err
 	}

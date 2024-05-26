@@ -28,15 +28,11 @@ func FindNode(c *fiber.Ctx) error {
 }
 
 func FindNodes(c *fiber.Ctx) error {
-	query := model.Query{}
-	if err := c.QueryParser(&query); err != nil {
-		return &ParseError{err}
-	}
-	nodes, err := model.FindNodes(&query)
+	pagination, err := service.FindNodes(c.QueryInt("page", 1))
 	if err != nil {
 		return err
 	}
-	return c.JSON(nodes)
+	return c.JSON(pagination)
 }
 
 func InsertNode(c *fiber.Ctx) error {
