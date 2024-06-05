@@ -26,9 +26,9 @@ func Init(app *fiber.App) {
 	app.Post("/api/profile", InsertProfile)
 	app.Delete("/api/profile/:name", DeleteProfile)
 
+	app.Get("/api/user/profiles", FindUserProfiles)
 	app.Get("/api/user/:id", FindUser)
 	app.Get("/api/users", FindUsers)
-	app.Get("/api/user/:id/sub", FindUserProfiles)
 	app.Post("/api/user", InsertUser)
 	app.Put("/api/user", UpdateUserDate)
 	app.Patch("/api/user", UpdateUserProfiles)

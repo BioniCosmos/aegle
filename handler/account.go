@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"regexp"
 	"time"
 
 	"github.com/bionicosmos/aegle/config"
@@ -128,13 +127,9 @@ func DeleteAccount(c *fiber.Ctx) error {
 }
 
 func AuthorizeAccount(c *fiber.Ctx) error {
-	subRegEx, err := regexp.Compile(`^\/api\/user\/[^/]+\/sub.*$`)
-	if err != nil {
-		return err
-	}
 	if path := c.Path(); path != "/api/account/sign-in" &&
 		path != "/api/account/sign-up" &&
-		!subRegEx.MatchString(path) {
+		path != "/api/user/profiles" {
 		session, err := store.Get(c)
 		if err != nil {
 			return err
