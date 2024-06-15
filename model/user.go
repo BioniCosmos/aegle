@@ -10,22 +10,22 @@ import (
 )
 
 type User struct {
-	Id        primitive.ObjectID    `json:"id,omitempty" bson:"_id"`
-	Name      string                `json:"name,omitempty"`
-	Email     string                `json:"email,omitempty"`
-	Level     uint32                `json:"level,omitempty"`
-	StartDate string                `json:"startDate,omitempty" bson:"startDate"`
-	Cycles    int                   `json:"cycles,omitempty"`
-	NextDate  string                `json:"nextDate,omitempty" bson:"nextDate"`
-	UUID      string                `json:"uuid,omitempty" bson:"uuid"`
-	Flow      string                `json:"flow,omitempty"`
-	Security  string                `json:"security,omitempty"`
-	Profiles  []ProfileSubscription `json:"profiles,omitempty"`
+	Id        primitive.ObjectID    `json:"id" bson:"_id"`
+	Name      string                `json:"name"`
+	Email     string                `json:"email"`
+	Level     uint32                `json:"level"`
+	StartDate string                `json:"startDate" bson:"startDate"`
+	Cycles    int                   `json:"cycles"`
+	NextDate  string                `json:"nextDate" bson:"nextDate"`
+	UUID      string                `json:"uuid" bson:"uuid"`
+	Flow      string                `json:"flow"`
+	Security  string                `json:"security"`
+	Profiles  []ProfileSubscription `json:"profiles"`
 }
 
 type ProfileSubscription struct {
-	Name string `json:"name,omitempty"`
-	Link string `json:"link,omitempty"`
+	Name string `json:"name"`
+	Link string `json:"link"`
 }
 
 var usersColl *mongo.Collection

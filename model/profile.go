@@ -9,10 +9,10 @@ import (
 )
 
 type Profile struct {
-	Name     string               `json:"name,omitempty"`
-	Outbound string               `json:"outbound,omitempty"`
-	NodeId   primitive.ObjectID   `json:"nodeId,omitempty" bson:"nodeId"`
-	UserIds  []primitive.ObjectID `json:"userIds,omitempty" bson:"userIds"`
+	Name     string               `json:"name"`
+	Outbound string               `json:"outbound"`
+	NodeId   primitive.ObjectID   `json:"nodeId" bson:"nodeId"`
+	UserIds  []primitive.ObjectID `json:"userIds" bson:"userIds"`
 }
 
 var profilesColl *mongo.Collection

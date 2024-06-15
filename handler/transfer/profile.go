@@ -6,10 +6,10 @@ import (
 )
 
 type InsertProfileBody struct {
-	Name     string             `json:"name,omitempty"`
-	Inbound  string             `json:"inbound,omitempty"`
-	Outbound string             `json:"outbound,omitempty"`
-	NodeId   primitive.ObjectID `json:"nodeId,omitempty"`
+	Name     string             `json:"name"`
+	Inbound  string             `json:"inbound"`
+	Outbound string             `json:"outbound"`
+	NodeId   primitive.ObjectID `json:"nodeId"`
 }
 
 func (body *InsertProfileBody) ToProfile() (*model.Profile, string) {

@@ -11,15 +11,15 @@ type FindUserProfilesQuery struct {
 }
 
 type InsertUserBody struct {
-	Name      string `json:"name,omitempty"`
-	Email     string `json:"email,omitempty"`
-	Level     uint32 `json:"level,omitempty"`
-	StartDate string `json:"startDate,omitempty"`
-	Cycles    int    `json:"cycles,omitempty"`
-	NextDate  string `json:"nextDate,omitempty"`
-	UUID      string `json:"uuid,omitempty"`
-	Flow      string `json:"flow,omitempty"`
-	Security  string `json:"security,omitempty"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Level     uint32 `json:"level"`
+	StartDate string `json:"startDate"`
+	Cycles    int    `json:"cycles"`
+	NextDate  string `json:"nextDate"`
+	UUID      string `json:"uuid"`
+	Flow      string `json:"flow"`
+	Security  string `json:"security"`
 }
 
 func (body *InsertUserBody) ToUser() model.User {
@@ -37,13 +37,13 @@ func (body *InsertUserBody) ToUser() model.User {
 }
 
 type UpdateUserDateBody struct {
-	Id       primitive.ObjectID `json:"id,omitempty"`
-	Cycles   int                `json:"cycles,omitempty"`
-	NextDate string             `json:"nextDate,omitempty"`
+	Id       primitive.ObjectID `json:"id"`
+	Cycles   int                `json:"cycles"`
+	NextDate string             `json:"nextDate"`
 }
 
 type UpdateUserProfilesBody struct {
-	Id          primitive.ObjectID `json:"id,omitempty"`
-	ProfileName string             `json:"profileName,omitempty"`
-	Action      string             `json:"action,omitempty"`
+	Id          primitive.ObjectID `json:"id"`
+	ProfileName string             `json:"profileName"`
+	Action      string             `json:"action"`
 }

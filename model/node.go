@@ -10,10 +10,10 @@ import (
 )
 
 type Node struct {
-	Id           primitive.ObjectID `json:"id,omitempty" bson:"_id"`
-	Name         string             `json:"name,omitempty"`
-	APIAddress   string             `json:"apiAddress,omitempty" bson:"apiAddress"`
-	ProfileNames []string           `json:"profileNames,omitempty" bson:"profileNames"`
+	Id           primitive.ObjectID `json:"id" bson:"_id"`
+	Name         string             `json:"name"`
+	APIAddress   string             `json:"apiAddress" bson:"apiAddress"`
+	ProfileNames []string           `json:"profileNames" bson:"profileNames"`
 }
 
 var nodesColl *mongo.Collection
