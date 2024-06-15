@@ -30,6 +30,9 @@ func DeleteNode(id *primitive.ObjectID) error {
 			if err != nil {
 				return nil, err
 			}
+			if node.ProfileNames == nil {
+				return nil, nil
+			}
 			profiles, err := model.DeleteProfiles(
 				ctx,
 				bson.M{"name": bson.M{"$in": node.ProfileNames}},
@@ -50,27 +53,25 @@ func DeleteNode(id *primitive.ObjectID) error {
 					return nil, err
 				}
 			}
-			if len(node.ProfileNames) > 0 {
-				wg := sync.WaitGroup{}
-				errCh := make(chan error)
-				for _, profileName := range node.ProfileNames {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						errCh <- edge.RemoveInbound(
-							node.APIAddress,
-							&pb.RemoveInboundRequest{Name: profileName},
-						)
-					}()
-				}
+			wg := sync.WaitGroup{}
+			errCh := make(chan error)
+			for _, profileName := range node.ProfileNames {
+				wg.Add(1)
 				go func() {
-					wg.Wait()
-					close(errCh)
+					defer wg.Done()
+					errCh <- edge.RemoveInbound(
+						node.APIAddress,
+						&pb.RemoveInboundRequest{Name: profileName},
+					)
 				}()
-				for err := range errCh {
-					if err != nil {
-						return nil, err
-					}
+			}
+			go func() {
+				wg.Wait()
+				close(errCh)
+			}()
+			for err := range errCh {
+				if err != nil {
+					return nil, err
 				}
 			}
 			return nil, nil
