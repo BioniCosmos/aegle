@@ -1,142 +1,88 @@
 package handler
 
 import (
-	"errors"
-	"time"
+	"slices"
 
-	"github.com/bionicosmos/aegle/config"
-	"github.com/bionicosmos/aegle/model"
+	"github.com/bionicosmos/aegle/handler/transfer"
+	"github.com/bionicosmos/aegle/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
-	"github.com/gofiber/storage/mongodb"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var store *session.Store
 
-func SessionInit() {
-	store = session.New(session.Config{
-		Expiration: time.Hour * 24 * 30,
-		Storage: mongodb.New(mongodb.Config{
-			ConnectionURI: config.C.DatabaseURL,
-			Database:      config.C.DatabaseName,
-		}),
-	})
+func SignUp(c *fiber.Ctx) error {
+	body := transfer.SignUpBody{}
+	if err := c.BodyParser(&body); err != nil {
+		return &ParseError{err}
+	}
+	if err := service.SignUp(&body); err != nil {
+		return err
+	}
+	return toJSON(c, fiber.StatusCreated)
 }
 
-func SignInAccount(c *fiber.Ctx) error {
-	session, err := store.Get(c)
+func Verify(c *fiber.Ctx) error {
+	body := transfer.VerifyBody{}
+	if err := c.BodyParser(&body); err != nil {
+		return &ParseError{err}
+	}
+	success, err := service.Verify(&body)
 	if err != nil {
 		return err
 	}
-	if session.Fresh() {
-		account := new(model.Account)
-		if err := c.BodyParser(account); err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-		inner, err := model.FindAccount(account.Username)
-		if err != nil {
-			if errors.Is(err, mongo.ErrNoDocuments) {
-				return fiber.NewError(fiber.StatusUnauthorized, "User does not exist.")
-			}
-			return err
-		}
-		if !account.PasswordIsCorrect(inner) {
-			return fiber.ErrUnauthorized
-		}
-		store.CookieSessionOnly = !account.IsExtended
-		session.Set("username", account.Username)
-		session.Save()
-	}
-	return c.JSON(fiber.NewError(fiber.StatusOK))
-}
-
-func SignUpAccount(c *fiber.Ctx) error {
-	account := new(model.Account)
-	if err := c.BodyParser(account); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	}
-	_, err := model.FindAccount(account.Username)
-	if err != nil && err != mongo.ErrNoDocuments {
-		return err
-	}
-	if err != mongo.ErrNoDocuments {
-		return fiber.NewError(fiber.StatusConflict, "User exists.")
-	}
-	if err := account.Insert(); err != nil {
-		return err
-	}
-	return c.JSON(fiber.NewError(fiber.StatusCreated))
-}
-
-func SignOutAccount(c *fiber.Ctx) error {
-	session, err := store.Get(c)
-	if err != nil {
-		return err
-	}
-	if err := session.Destroy(); err != nil {
-		return err
-	}
-	return c.JSON(fiber.NewError(fiber.StatusOK))
-}
-
-func ChangeAccountPassword(c *fiber.Ctx) error {
-	password := new(struct {
-		Old string `json:"old"`
-		New string `json:"new"`
-	})
-	if err := c.BodyParser(password); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	if !success {
+		return fiber.ErrBadRequest
 	}
 	session, err := store.Get(c)
 	if err != nil {
 		return err
 	}
-	username, ok := session.Get("username").(string)
-	if !ok {
-		return errors.New("cannot get your username from the session")
+	session.Set("email", body.Email)
+	if err := session.Save(); err != nil {
+		return err
 	}
-	inner, err := model.FindAccount(username)
+	return toJSON(c, fiber.StatusOK)
+}
+
+func SignIn(c *fiber.Ctx) error {
+	body := transfer.SignInBody{}
+	success, err := service.SignIn(&body)
 	if err != nil {
 		return err
 	}
-	account := &model.Account{Username: username, Password: password.Old}
-	if !account.PasswordIsCorrect(inner) {
+	if !success {
+		return fiber.ErrBadRequest
+	}
+	session, err := store.Get(c)
+	if err != nil {
+		return err
+	}
+	session.Set("email", body.Email)
+	if err := session.Save(); err != nil {
+		return err
+	}
+	return toJSON(c, fiber.StatusOK)
+}
+
+func Auth(c *fiber.Ctx) error {
+	if slices.Contains(
+		[]string{
+			"/api/account/sign-up",
+			"/api/account/verification",
+			"/api/account/sign-in",
+			"/api/user/profiles",
+		},
+		c.Path(),
+	) {
+		return c.Next()
+	}
+	session, err := store.Get(c)
+	if err != nil {
+		return err
+	}
+	if session.Get("email") == nil {
 		return fiber.ErrUnauthorized
-	}
-	account.Password = password.New
-	if err := account.Update(); err != nil {
-		return err
-	}
-	return c.JSON(fiber.NewError(fiber.StatusOK))
-}
-
-func DeleteAccount(c *fiber.Ctx) error {
-	session, err := store.Get(c)
-	if err != nil {
-		return err
-	}
-	username, ok := session.Get("username").(string)
-	if !ok {
-		return errors.New("cannot get your username from the session")
-	}
-	if err := model.DeleteAccount(username); err != nil {
-		return err
-	}
-	return c.JSON(fiber.NewError(fiber.StatusOK))
-}
-
-func AuthorizeAccount(c *fiber.Ctx) error {
-	if path := c.Path(); path != "/api/account/sign-in" &&
-		path != "/api/account/sign-up" &&
-		path != "/api/user/profiles" {
-		session, err := store.Get(c)
-		if err != nil {
-			return err
-		}
-		if session.Fresh() {
-			return fiber.ErrUnauthorized
-		}
 	}
 	return c.Next()
 }

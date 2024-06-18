@@ -2,9 +2,12 @@ package handler
 
 import (
 	"path"
+	"time"
 
 	"github.com/bionicosmos/aegle/config"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/gofiber/storage/mongodb"
 )
 
 func Init(app *fiber.App) {
@@ -14,7 +17,7 @@ func Init(app *fiber.App) {
 		return c.SendFile(path.Join(config.C.Dashboard, "index.html"))
 	})
 
-	app.Use("/api", AuthorizeAccount)
+	app.Use("/api", Auth)
 
 	app.Get("/api/node/:id", FindNode)
 	app.Get("/api/nodes", FindNodes)
@@ -34,9 +37,15 @@ func Init(app *fiber.App) {
 	app.Patch("/api/user", UpdateUserProfiles)
 	app.Delete("/api/user/:id", DeleteUser)
 
-	app.Post("/api/account/sign-in", SignInAccount)
-	app.Post("/api/account/sign-up", SignUpAccount)
-	app.Post("/api/account/sign-out", SignOutAccount)
-	app.Patch("/api/account/password", ChangeAccountPassword)
-	app.Delete("/api/account", DeleteAccount)
+	app.Post("/api/account/sign-up", SignUp)
+	app.Post("/api/account/verification", Verify)
+	app.Post("/api/account/sign-in", SignIn)
+
+	store = session.New(session.Config{
+		Expiration: time.Hour * 24 * 365,
+		Storage: mongodb.New(mongodb.Config{
+			ConnectionURI: config.C.DatabaseURL,
+			Database:      config.C.DatabaseName,
+		}),
+	})
 }

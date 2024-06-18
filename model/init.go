@@ -24,19 +24,30 @@ func Init() *mongo.Client {
 	profilesColl = db.Collection("profiles")
 	usersColl = db.Collection("users")
 	accountsColl = db.Collection("accounts")
+	settingsColl = db.Collection("settings")
+	verificationCodesColl = db.Collection("verificationCodes")
 
-	options := options.Index().SetUnique(true)
+	uniqueOptions := options.Index().SetUnique(true)
 	profilesColl.Indexes().CreateOne(
 		ctx,
-		mongo.IndexModel{Keys: bson.M{"name": 1}, Options: options},
+		mongo.IndexModel{Keys: bson.M{"name": 1}, Options: uniqueOptions},
 	)
 	usersColl.Indexes().CreateOne(
 		ctx,
-		mongo.IndexModel{Keys: bson.M{"email": 1}, Options: options},
+		mongo.IndexModel{Keys: bson.M{"email": 1}, Options: uniqueOptions},
 	)
 	accountsColl.Indexes().CreateOne(
 		ctx,
-		mongo.IndexModel{Keys: bson.M{"username": 1}, Options: options},
+		mongo.IndexModel{Keys: bson.M{"email": 1}, Options: uniqueOptions},
 	)
+	verificationCodesColl.
+		Indexes().
+		CreateOne(
+			ctx,
+			mongo.IndexModel{
+				Keys:    bson.M{"createdAt": 1},
+				Options: options.Index().SetExpireAfterSeconds(60 * 5),
+			},
+		)
 	return client
 }

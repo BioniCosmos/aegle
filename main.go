@@ -62,6 +62,5 @@ func main() {
 	})
 	app.Use(logger.New())
 	handler.Init(app)
-	handler.SessionInit()
 	log.Fatal(app.Listen(config.C.Listen))
 }

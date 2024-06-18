@@ -3,11 +3,11 @@ module github.com/bionicosmos/aegle
 go 1.22.3
 
 require (
+	github.com/bionicosmos/argon2 v0.0.0-20240614171624-2ecbbf0e0ace
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/storage/mongodb v1.3.9
 	github.com/xtls/xray-core v1.8.11
 	go.mongodb.org/mongo-driver v1.15.0
-	golang.org/x/crypto v0.23.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.1
 )
@@ -51,14 +51,15 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20240424034433-3c2c7870ae76 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
+	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.21.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240509183442-62759503f434 // indirect
