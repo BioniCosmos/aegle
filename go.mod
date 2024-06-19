@@ -3,9 +3,10 @@ module github.com/bionicosmos/aegle
 go 1.22.3
 
 require (
-	github.com/bionicosmos/argon2 v0.0.0-20240614171624-2ecbbf0e0ace
+	github.com/bionicosmos/argon2 v0.1.0
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/storage/mongodb v1.3.9
+	github.com/google/uuid v1.6.0
 	github.com/xtls/xray-core v1.8.11
 	go.mongodb.org/mongo-driver v1.15.0
 	google.golang.org/grpc v1.63.2
@@ -21,7 +22,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20240509144519-723abb6459b7 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
