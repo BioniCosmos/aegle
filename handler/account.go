@@ -23,22 +23,20 @@ func SignUp(c *fiber.Ctx) error {
 }
 
 func Verify(c *fiber.Ctx) error {
-	body := transfer.VerifyBody{}
-	if err := c.BodyParser(&body); err != nil {
-		return &ParseError{err}
-	}
-	success, err := service.Verify(&body)
+	id := c.Params("id")
+	account, err := service.Verify(id)
 	if err != nil {
 		return err
 	}
-	if !success {
+	email := account.Email
+	if email == "" {
 		return fiber.ErrBadRequest
 	}
 	session, err := store.Get(c)
 	if err != nil {
 		return err
 	}
-	session.Set("email", body.Email)
+	session.Set("email", email)
 	if err := session.Save(); err != nil {
 		return err
 	}

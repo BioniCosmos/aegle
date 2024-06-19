@@ -38,7 +38,7 @@ func Init(app *fiber.App) {
 	app.Delete("/api/user/:id", DeleteUser)
 
 	app.Post("/api/account/sign-up", SignUp)
-	app.Post("/api/account/verification", Verify)
+	app.Post("/api/account/verification/:id", Verify)
 	app.Post("/api/account/sign-in", SignIn)
 
 	store = session.New(session.Config{

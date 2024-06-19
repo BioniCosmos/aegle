@@ -6,11 +6,6 @@ type SignUpBody struct {
 	Password string `json:"password"`
 }
 
-type VerifyBody struct {
-	Email string `json:"email"`
-	Code  string `json:"code"`
-}
-
 type SignInBody struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`

@@ -8,26 +8,29 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type setting struct {
-	Email struct {
-		Host     string
-		Port     uint16
-		Username string
-		Password string
-	}
+type Setting struct {
+	BaseURL string `bson:"baseURL"`
+	Email   *Email
+}
+
+type Email struct {
+	Host     string
+	Port     uint16
+	Username string
+	Password string
 }
 
 var settingsColl *mongo.Collection
 
 const id = "config"
 
-func Setting(field string) (setting, error) {
-	s := setting{}
-	return s, settingsColl.FindOne(
+func FindSetting(field string) (Setting, error) {
+	setting := Setting{}
+	return setting, settingsColl.FindOne(
 		context.Background(),
 		bson.M{"_id": id},
 		options.FindOne().SetProjection(bson.M{field: 1}),
-	).Decode(&s)
+	).Decode(&setting)
 }
 
 func SetSetting(field string, value any) error {

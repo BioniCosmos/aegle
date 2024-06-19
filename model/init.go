@@ -26,28 +26,34 @@ func Init() *mongo.Client {
 	accountsColl = db.Collection("accounts")
 	settingsColl = db.Collection("settings")
 	verificationCodesColl = db.Collection("verificationCodes")
+	verificationLinksColl = db.Collection("verificationLinks")
 
-	uniqueOptions := options.Index().SetUnique(true)
-	profilesColl.Indexes().CreateOne(
-		ctx,
-		mongo.IndexModel{Keys: bson.M{"name": 1}, Options: uniqueOptions},
-	)
-	usersColl.Indexes().CreateOne(
-		ctx,
-		mongo.IndexModel{Keys: bson.M{"email": 1}, Options: uniqueOptions},
-	)
-	accountsColl.Indexes().CreateOne(
-		ctx,
-		mongo.IndexModel{Keys: bson.M{"email": 1}, Options: uniqueOptions},
-	)
+	profilesColl.Indexes().CreateOne(ctx, uniqueIndex("name"))
+	usersColl.Indexes().CreateOne(ctx, uniqueIndex("email"))
+	accountsColl.Indexes().CreateOne(ctx, uniqueIndex("email"))
 	verificationCodesColl.
 		Indexes().
-		CreateOne(
-			ctx,
-			mongo.IndexModel{
-				Keys:    bson.M{"createdAt": 1},
-				Options: options.Index().SetExpireAfterSeconds(60 * 5),
-			},
-		)
+		CreateOne(ctx, expireIndex("createdAt", 5*minute))
+	verificationLinksColl.
+		Indexes().
+		CreateOne(ctx, expireIndex("createdAt", day))
 	return client
+}
+
+func uniqueIndex(field string) mongo.IndexModel {
+	return mongo.IndexModel{
+		Keys:    bson.M{field: 1},
+		Options: options.Index().SetUnique(true),
+	}
+}
+
+const minute = 60
+const hour = 60 * minute
+const day = 24 * hour
+
+func expireIndex(field string, seconds int32) mongo.IndexModel {
+	return mongo.IndexModel{
+		Keys:    bson.M{field: 1},
+		Options: options.Index().SetExpireAfterSeconds(seconds),
+	}
 }

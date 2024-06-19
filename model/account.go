@@ -30,3 +30,11 @@ func InsertAccount(ctx context.Context, account *Account) error {
 	_, err := accountsColl.InsertOne(ctx, account)
 	return err
 }
+
+func UpdateAccount(filter any, update any) (Account, error) {
+	account := Account{}
+	return account,
+		accountsColl.
+			FindOneAndUpdate(context.Background(), filter, update).
+			Decode(&account)
+}

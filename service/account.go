@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"math/rand"
 	"net/smtp"
+	"path"
 	"time"
 
 	"github.com/bionicosmos/aegle/handler/transfer"
 	"github.com/bionicosmos/aegle/model"
 	"github.com/bionicosmos/aegle/model/account"
+	"github.com/bionicosmos/aegle/setting"
 	"github.com/bionicosmos/argon2"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -22,8 +26,7 @@ func SignUp(body *transfer.SignUpBody) error {
 			_, err := ctx.WithTransaction(
 				ctx,
 				func(ctx mongo.SessionContext) (any, error) {
-					code := generateCode(4)
-					model.InsertAccount(
+					if err := model.InsertAccount(
 						ctx,
 						&model.Account{
 							Email:    body.Email,
@@ -32,16 +35,28 @@ func SignUp(body *transfer.SignUpBody) error {
 							Role:     account.Member,
 							Status:   account.Unverified,
 						},
-					)
-					model.InsertVerificationCode(ctx, &model.VerificationCode{
-						Email:     body.Email,
-						Code:      code,
-						CreatedAt: time.Now(),
-					})
+					); err != nil {
+						return nil, err
+					}
+					id := uuid.NewString()
+					if err := model.InsertVerificationLink(
+						ctx,
+						&model.VerificationLink{
+							Id:        id,
+							Email:     body.Email,
+							CreatedAt: time.Now(),
+						},
+					); err != nil {
+						return nil, err
+					}
 					if err := sendMail(
 						body.Email,
-						"Verification",
-						code,
+						"Sign-up Verification",
+						path.Join(
+							setting.Get[string]("BaseURL"),
+							"dashboard/verification",
+							id,
+						),
 					); err != nil {
 						return nil, err
 					}
@@ -53,12 +68,15 @@ func SignUp(body *transfer.SignUpBody) error {
 	)
 }
 
-func Verify(body *transfer.VerifyBody) (bool, error) {
-	verificationCode, err := model.FindVerificationCode(body.Email)
+func Verify(id string) (model.Account, error) {
+	link, err := model.FindVerificationLink(id)
 	if err != nil {
-		return false, err
+		return model.Account{}, err
 	}
-	return body.Code == verificationCode.Code, nil
+	return model.UpdateAccount(
+		bson.M{"email": link.Email},
+		bson.M{"$set": bson.M{"status": account.Normal}},
+	)
 }
 
 func SignIn(body *transfer.SignInBody) (bool, error) {
@@ -78,11 +96,7 @@ func generateCode(length int) string {
 }
 
 func sendMail(to string, subject string, body string) error {
-	setting, err := model.Setting("email")
-	if err != nil {
-		return err
-	}
-	email := setting.Email
+	email := setting.Get[*model.Email]("Email")
 	auth := smtp.PlainAuth("", email.Username, email.Password, email.Host)
 	message := bytes.Buffer{}
 	message.WriteString("Subject: ")
