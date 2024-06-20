@@ -2,11 +2,10 @@ package service
 
 import (
 	"bytes"
-	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/smtp"
-	"path"
 	"time"
 
 	"github.com/bionicosmos/aegle/handler/transfer"
@@ -19,63 +18,60 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var ErrAccountExists = errors.New("account exists")
+
 func SignUp(body *transfer.SignUpBody) error {
-	return client.UseSession(
-		context.Background(),
-		func(ctx mongo.SessionContext) error {
-			_, err := ctx.WithTransaction(
-				ctx,
-				func(ctx mongo.SessionContext) (any, error) {
-					if err := model.InsertAccount(
-						ctx,
-						&model.Account{
-							Email:    body.Email,
-							Name:     body.Name,
-							Password: argon2.Hash(body.Password),
-							Role:     account.Member,
-							Status:   account.Unverified,
-						},
-					); err != nil {
-						return nil, err
-					}
-					id := uuid.NewString()
-					if err := model.InsertVerificationLink(
-						ctx,
-						&model.VerificationLink{
-							Id:        id,
-							Email:     body.Email,
-							CreatedAt: time.Now(),
-						},
-					); err != nil {
-						return nil, err
-					}
-					if err := sendMail(
-						body.Email,
-						"Sign-up Verification",
-						path.Join(
-							setting.Get[string]("BaseURL"),
-							"dashboard/verification",
-							id,
-						),
-					); err != nil {
-						return nil, err
-					}
-					return nil, nil
-				},
-			)
+	if _, err := model.FindAccount(body.Email); err != nil &&
+		!errors.Is(err, mongo.ErrNoDocuments) {
+		return err
+	} else if err == nil {
+		return ErrAccountExists
+	}
+	return transaction(func(ctx mongo.SessionContext) error {
+		if err := model.InsertAccount(
+			ctx,
+			&model.Account{
+				Email:    body.Email,
+				Name:     body.Name,
+				Password: argon2.Hash(body.Password),
+				Role:     account.Member,
+				Status:   account.Unverified,
+			},
+		); err != nil {
 			return err
-		},
-	)
+		}
+		id := uuid.NewString()
+		if err := model.InsertVerificationLink(
+			ctx,
+			&model.VerificationLink{
+				Id:        id,
+				Email:     body.Email,
+				CreatedAt: time.Now(),
+			},
+		); err != nil {
+			return err
+		}
+		return sendMail(
+			body.Email,
+			"Sign-up Verification",
+			setting.X.BaseURL+"/dashboard/verification/"+id,
+		)
+	})
 }
 
 func Verify(id string) (model.Account, error) {
-	link, err := model.FindVerificationLink(id)
-	if err != nil {
-		return model.Account{}, err
-	}
-	return model.UpdateAccount(
-		bson.M{"email": link.Email},
-		bson.M{"$set": bson.M{"status": account.Normal}},
+	return transactionWithValue(
+		func(ctx mongo.SessionContext) (model.Account, error) {
+			link, err := model.DeleteVerificationLink(ctx, id)
+			if err != nil {
+				return model.Account{}, err
+			}
+			return model.UpdateAccount(
+				ctx,
+				bson.M{"email": link.Email},
+				bson.M{"$set": bson.M{"status": account.Normal}},
+			)
+		},
 	)
 }
 
@@ -96,7 +92,7 @@ func generateCode(length int) string {
 }
 
 func sendMail(to string, subject string, body string) error {
-	email := setting.Get[*model.Email]("Email")
+	email := setting.X.Email
 	auth := smtp.PlainAuth("", email.Username, email.Password, email.Host)
 	message := bytes.Buffer{}
 	message.WriteString("Subject: ")
