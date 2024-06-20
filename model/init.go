@@ -3,8 +3,8 @@ package model
 import (
 	"context"
 	"log"
+	"os"
 
-	"github.com/bionicosmos/aegle/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,12 +14,12 @@ func Init() *mongo.Client {
 	ctx := context.Background()
 	client, err := mongo.Connect(
 		ctx,
-		options.Client().ApplyURI(config.C.DatabaseURL),
+		options.Client().ApplyURI(os.Getenv("DB_URL")),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	db := client.Database(config.C.DatabaseName)
+	db := client.Database(os.Getenv("DB_NAME"))
 	nodesColl = db.Collection("nodes")
 	profilesColl = db.Collection("profiles")
 	usersColl = db.Collection("users")

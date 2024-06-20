@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"slices"
 	"sync"
-
-	"github.com/bionicosmos/aegle/config"
 )
 
 type Server struct {
@@ -118,7 +116,7 @@ type store struct {
 var mutex sync.Mutex
 
 func storeRead() (store, error) {
-	path := config.C.XrayConfig
+	path := os.Getenv("XRAY_CONFIG")
 	mutex.Lock()
 	data, err := os.ReadFile(path)
 	if err != nil {

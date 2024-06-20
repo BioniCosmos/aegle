@@ -1,20 +1,21 @@
 package handler
 
 import (
+	"os"
 	"path"
 	"time"
 
-	"github.com/bionicosmos/aegle/config"
+	"github.com/bionicosmos/aegle/setting"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/storage/mongodb"
 )
 
 func Init(app *fiber.App) {
-	app.Static("/", config.C.Home)
-	app.Static("/dashboard/", config.C.Dashboard)
+	app.Static("/", setting.X.Home)
+	app.Static("/dashboard/", setting.X.Dashboard)
 	app.Use("/dashboard/", func(c *fiber.Ctx) error {
-		return c.SendFile(path.Join(config.C.Dashboard, "index.html"))
+		return c.SendFile(path.Join(setting.X.Dashboard, "index.html"))
 	})
 
 	app.Use("/api", Auth)
@@ -44,8 +45,8 @@ func Init(app *fiber.App) {
 	store = session.New(session.Config{
 		Expiration: time.Hour * 24 * 365,
 		Storage: mongodb.New(mongodb.Config{
-			ConnectionURI: config.C.DatabaseURL,
-			Database:      config.C.DatabaseName,
+			ConnectionURI: os.Getenv("DB_URL"),
+			Database:      os.Getenv("DB_NAME"),
 		}),
 	})
 }

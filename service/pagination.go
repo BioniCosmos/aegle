@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
+	"os"
 
-	"github.com/bionicosmos/aegle/config"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -20,7 +20,7 @@ func paginate[T any](
 	f func(*options.FindOptions) ([]T, error),
 ) (Pagination[T], error) {
 	total, err := client.
-		Database(config.C.DatabaseName).
+		Database(os.Getenv("DB_NAME")).
 		Collection(collection).
 		EstimatedDocumentCount(context.Background())
 	if err != nil {

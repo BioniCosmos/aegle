@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
-	"github.com/bionicosmos/aegle/config"
 	pb "github.com/bionicosmos/aegle/edge/xray"
 	"google.golang.org/grpc"
 )
 
 func Start() {
-	listener, err := net.Listen("tcp", config.C.Listen)
+	listener, err := net.Listen("tcp", os.Getenv("LISTEN"))
 	if err != nil {
 		log.Fatal(err)
 	}

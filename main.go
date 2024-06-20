@@ -2,37 +2,32 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"slices"
 	"time"
 
-	"github.com/bionicosmos/aegle/config"
 	"github.com/bionicosmos/aegle/edge"
 	"github.com/bionicosmos/aegle/handler"
 	"github.com/bionicosmos/aegle/model"
 	"github.com/bionicosmos/aegle/service"
+	"github.com/bionicosmos/aegle/setting"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	if len(os.Args) < 2 || !slices.Contains([]string{"center", "edge"}, os.Args[1]) {
-		fmt.Println(`Commands:
-    center
-    edge`)
-		os.Exit(2)
-	}
-	params := flag.NewFlagSet("Aegle", flag.ExitOnError)
-	configPath := params.String("config", "./config.json", "path of the configuration file")
-	params.Parse(os.Args[2:])
-	config.Init(*configPath, os.Args[1])
-	if os.Args[1] == "edge" {
+	mode := loadMode()
+	loadEnv(mode)
+	if mode == "edge" {
 		edge.Start()
 	}
+
 	service.Init(model.Init())
+	setting.Init()
+
 	if err := service.CheckUser(); err != nil {
 		log.Fatal(err)
 	}
@@ -44,6 +39,7 @@ func main() {
 			}
 		}
 	}()
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
@@ -62,5 +58,31 @@ func main() {
 	})
 	app.Use(logger.New())
 	handler.Init(app)
-	log.Fatal(app.Listen(config.C.Listen))
+	log.Fatal(app.Listen(os.Getenv("LISTEN")))
+}
+
+func loadMode() string {
+	if len(os.Args) < 2 ||
+		!slices.Contains([]string{"center", "edge"}, os.Args[1]) {
+		fmt.Println(`Commands:
+    center
+    edge`)
+		os.Exit(2)
+	}
+	return os.Args[1]
+}
+
+func loadEnv(mode string) {
+	if mode == "center" {
+		if os.Getenv("DB_URL") == "" {
+			log.Fatal("empty DB_URL")
+		}
+		if os.Getenv("DB_NAME") == "" {
+			os.Setenv("DB_NAME", "aegle")
+		}
+	} else {
+		if os.Getenv("XRAY_CONFIG") == "" {
+			os.Setenv("XRAY_CONFIG", "/usr/local/etc/xray/inbounds.json")
+		}
+	}
 }
