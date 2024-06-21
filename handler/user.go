@@ -61,11 +61,10 @@ func FindUserProfiles(c *fiber.Ctx) error {
 }
 
 func InsertUser(c *fiber.Ctx) error {
-	userPost := transfer.InsertUserBody{}
-	if err := c.BodyParser(&userPost); err != nil {
+	user := model.User{}
+	if err := c.BodyParser(&user); err != nil {
 		return &ParseError{err}
 	}
-	user := userPost.ToUser()
 	if err := model.InsertUser(context.Background(), &user); err != nil {
 		return err
 	}
