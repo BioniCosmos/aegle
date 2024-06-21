@@ -40,6 +40,7 @@ func Init(app *fiber.App) {
 
 	app.Post("/api/account/sign-up", SignUp)
 	app.Post("/api/account/verification/:id", Verify)
+	app.Post("/api/account/verification", SendVerificationLink)
 	app.Post("/api/account/sign-in", SignIn)
 
 	store = session.New(session.Config{

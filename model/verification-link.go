@@ -16,6 +16,14 @@ type VerificationLink struct {
 
 var verificationLinksColl *mongo.Collection
 
+func FindVerificationLink(email string) (VerificationLink, error) {
+	link := VerificationLink{}
+	return link,
+		verificationLinksColl.
+			FindOne(context.Background(), bson.M{"email": email}).
+			Decode(&link)
+}
+
 func InsertVerificationLink(
 	ctx context.Context,
 	verificationLink *VerificationLink,

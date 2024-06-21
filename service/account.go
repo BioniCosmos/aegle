@@ -21,43 +21,40 @@ import (
 var ErrAccountExists = errors.New("account exists")
 var ErrPassword = errors.New("password mismatch")
 
-func SignUp(body *transfer.SignUpBody) error {
+func SignUp(body *transfer.SignUpBody) (model.Account, error) {
 	if _, err := model.FindAccount(body.Email); err != nil &&
 		!errors.Is(err, mongo.ErrNoDocuments) {
-		return err
+		return model.Account{}, err
 	} else if err == nil {
-		return ErrAccountExists
+		return model.Account{}, ErrAccountExists
 	}
-	return transaction(func(ctx mongo.SessionContext) error {
-		if err := model.InsertAccount(
-			ctx,
-			&model.Account{
+	return transactionWithValue(
+		func(ctx mongo.SessionContext) (model.Account, error) {
+			account := model.Account{
 				Email:    body.Email,
 				Name:     body.Name,
 				Password: argon2.Hash(body.Password),
 				Role:     account.Member,
 				Status:   account.Unverified,
-			},
-		); err != nil {
-			return err
-		}
-		id := uuid.NewString()
-		if err := model.InsertVerificationLink(
-			ctx,
-			&model.VerificationLink{
+			}
+			if err := model.InsertAccount(ctx, &account); err != nil {
+				return model.Account{}, err
+			}
+			id := uuid.NewString()
+			link := model.VerificationLink{
 				Id:        id,
 				Email:     body.Email,
 				CreatedAt: time.Now(),
-			},
-		); err != nil {
-			return err
-		}
-		return sendMail(
-			body.Email,
-			"Sign-up Verification",
-			setting.X.BaseURL+"/dashboard/verification/"+id,
-		)
-	})
+			}
+			if err := model.InsertVerificationLink(ctx, &link); err != nil {
+				return model.Account{}, err
+			}
+			if err := sendLinkEmail(&link); err != nil {
+				return model.Account{}, err
+			}
+			return account, nil
+		},
+	)
 }
 
 func Verify(id string) (model.Account, error) {
@@ -74,6 +71,14 @@ func Verify(id string) (model.Account, error) {
 			)
 		},
 	)
+}
+
+func SendVerificationLink(email string) error {
+	link, err := model.FindVerificationLink(email)
+	if err != nil {
+		return err
+	}
+	return sendLinkEmail(&link)
 }
 
 func SignIn(body *transfer.SignInBody) (model.Account, error) {
@@ -93,6 +98,14 @@ func generateCode(length int) string {
 		digits[i] = byte(rand.Intn(10)) + '0'
 	}
 	return string(digits)
+}
+
+func sendLinkEmail(link *model.VerificationLink) error {
+	return sendMail(
+		link.Email,
+		"Sign-up Verification",
+		setting.X.BaseURL+"/dashboard/verification/"+link.Id,
+	)
 }
 
 func sendMail(to string, subject string, body string) error {

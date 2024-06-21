@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/bionicosmos/aegle/handler/transfer"
+	"github.com/bionicosmos/aegle/model"
+	"github.com/bionicosmos/aegle/model/account"
 	"github.com/bionicosmos/aegle/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
@@ -19,13 +21,17 @@ func SignUp(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return &ParseError{err}
 	}
-	if err := service.SignUp(&body); err != nil {
+	account, err := service.SignUp(&body)
+	if err != nil {
 		if errors.Is(err, service.ErrAccountExists) {
 			return fiber.NewError(fiber.StatusConflict, "The email exists.")
 		}
 		return err
 	}
-	return toJSON(c, fiber.StatusCreated)
+	if err := setAccount(c, &account); err != nil {
+		return err
+	}
+	return c.Status(fiber.StatusCreated).JSON(account)
 }
 
 func Verify(c *fiber.Ctx) error {
@@ -37,15 +43,21 @@ func Verify(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	session, err := store.Get(c)
-	if err != nil {
-		return err
-	}
-	session.Set("email", account.Email)
-	if err := session.Save(); err != nil {
+	if err := setAccount(c, &account); err != nil {
 		return err
 	}
 	return c.JSON(transfer.AccountOmitPassword(&account))
+}
+
+func SendVerificationLink(c *fiber.Ctx) error {
+	account, err := useAccount(c)
+	if err != nil {
+		return err
+	}
+	if err := service.SendVerificationLink(account.Email); err != nil {
+		return err
+	}
+	return toJSON(c, fiber.StatusOK)
 }
 
 func SignIn(c *fiber.Ctx) error {
@@ -63,12 +75,7 @@ func SignIn(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	session, err := store.Get(c)
-	if err != nil {
-		return err
-	}
-	session.Set("email", body.Email)
-	if err := session.Save(); err != nil {
+	if err := setAccount(c, &account); err != nil {
 		return err
 	}
 	return c.JSON(transfer.AccountOmitPassword(&account))
@@ -85,12 +92,37 @@ func Auth(c *fiber.Ctx) error {
 	) || strings.HasPrefix(c.Path(), "/api/account/verification") {
 		return c.Next()
 	}
+	account, err := useAccount(c)
+	if err != nil {
+		return err
+	}
+	if noAccess(&account) {
+		return fiber.ErrForbidden
+	}
+	return c.Next()
+}
+
+func useAccount(c *fiber.Ctx) (model.Account, error) {
+	session, err := store.Get(c)
+	if err != nil {
+		return model.Account{}, err
+	}
+	account, ok := session.Get("account").(model.Account)
+	if !ok {
+		return model.Account{}, fiber.ErrUnauthorized
+	}
+	return account, nil
+}
+
+func setAccount(c *fiber.Ctx, account *model.Account) error {
 	session, err := store.Get(c)
 	if err != nil {
 		return err
 	}
-	if session.Get("email") == nil {
-		return fiber.ErrUnauthorized
-	}
-	return c.Next()
+	session.Set("account", account)
+	return session.Save()
+}
+
+func noAccess(a *model.Account) bool {
+	return a.Status != account.Normal || a.Role != account.Admin
 }
