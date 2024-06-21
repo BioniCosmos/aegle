@@ -19,6 +19,7 @@ import (
 )
 
 var ErrAccountExists = errors.New("account exists")
+var ErrPassword = errors.New("password mismatch")
 
 func SignUp(body *transfer.SignUpBody) error {
 	if _, err := model.FindAccount(body.Email); err != nil &&
@@ -75,12 +76,15 @@ func Verify(id string) (model.Account, error) {
 	)
 }
 
-func SignIn(body *transfer.SignInBody) (bool, error) {
+func SignIn(body *transfer.SignInBody) (model.Account, error) {
 	account, err := model.FindAccount(body.Email)
 	if err != nil {
-		return false, err
+		return model.Account{}, err
 	}
-	return argon2.Verify(body.Password, account.Password), nil
+	if !argon2.Verify(body.Password, account.Password) {
+		return model.Account{}, ErrPassword
+	}
+	return account, nil
 }
 
 func generateCode(length int) string {

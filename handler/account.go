@@ -50,12 +50,18 @@ func Verify(c *fiber.Ctx) error {
 
 func SignIn(c *fiber.Ctx) error {
 	body := transfer.SignInBody{}
-	success, err := service.SignIn(&body)
-	if err != nil {
-		return err
+	if err := c.BodyParser(&body); err != nil {
+		return &ParseError{err}
 	}
-	if !success {
-		return fiber.ErrBadRequest
+	account, err := service.SignIn(&body)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fiber.NewError(fiber.StatusNotFound, "user does not exist")
+		}
+		if errors.Is(err, service.ErrPassword) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
+		return err
 	}
 	session, err := store.Get(c)
 	if err != nil {
@@ -65,7 +71,7 @@ func SignIn(c *fiber.Ctx) error {
 	if err := session.Save(); err != nil {
 		return err
 	}
-	return toJSON(c, fiber.StatusOK)
+	return c.JSON(transfer.AccountOmitPassword(&account))
 }
 
 func Auth(c *fiber.Ctx) error {
