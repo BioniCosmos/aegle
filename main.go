@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"log"
@@ -39,6 +40,8 @@ func main() {
 			}
 		}
 	}()
+
+	gob.Register(model.Account{})
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {

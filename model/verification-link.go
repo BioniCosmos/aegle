@@ -16,12 +16,10 @@ type VerificationLink struct {
 
 var verificationLinksColl *mongo.Collection
 
-func FindVerificationLink(email string) (VerificationLink, error) {
-	link := VerificationLink{}
-	return link,
-		verificationLinksColl.
-			FindOne(context.Background(), bson.M{"email": email}).
-			Decode(&link)
+func FindVerificationLink(id string) error {
+	return verificationLinksColl.
+		FindOne(context.Background(), bson.M{"_id": id}).
+		Err()
 }
 
 func InsertVerificationLink(
@@ -32,13 +30,7 @@ func InsertVerificationLink(
 	return err
 }
 
-func DeleteVerificationLink(
-	ctx context.Context,
-	id string,
-) (VerificationLink, error) {
-	link := VerificationLink{}
-	return link,
-		verificationLinksColl.
-			FindOneAndDelete(ctx, bson.M{"_id": id}).
-			Decode(&link)
+func DeleteVerificationLinks(ctx context.Context, email string) error {
+	_, err := verificationLinksColl.DeleteMany(ctx, bson.M{"email": email})
+	return err
 }

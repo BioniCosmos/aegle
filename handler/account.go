@@ -36,9 +36,13 @@ func SignUp(c *fiber.Ctx) error {
 
 func Verify(c *fiber.Ctx) error {
 	id := c.Params("id")
-	account, err := service.Verify(id)
+	account := getAccount(c)
+	account, err := service.Verify(id, &account)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		if errors.Is(err, service.ErrVerified) {
+			return fiber.ErrConflict
+		}
+		if errors.Is(err, service.ErrLinkExpired) {
 			return fiber.ErrNotFound
 		}
 		return err
@@ -50,11 +54,11 @@ func Verify(c *fiber.Ctx) error {
 }
 
 func SendVerificationLink(c *fiber.Ctx) error {
-	account, err := useAccount(c)
-	if err != nil {
-		return err
-	}
-	if err := service.SendVerificationLink(account.Email); err != nil {
+	account := getAccount(c)
+	if err := service.SendVerificationLink(&account); err != nil {
+		if errors.Is(err, service.ErrVerified) {
+			return fiber.ErrConflict
+		}
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)
@@ -89,16 +93,17 @@ func Auth(c *fiber.Ctx) error {
 			"/api/user/profiles",
 		},
 		c.Path(),
-	) || strings.HasPrefix(c.Path(), "/api/account/verification") {
+	) {
 		return c.Next()
 	}
 	account, err := useAccount(c)
 	if err != nil {
 		return err
 	}
-	if noAccess(&account) {
+	if !access(&account, c.Path()) {
 		return fiber.ErrForbidden
 	}
+	c.Locals("account", account)
 	return c.Next()
 }
 
@@ -114,15 +119,20 @@ func useAccount(c *fiber.Ctx) (model.Account, error) {
 	return account, nil
 }
 
+func getAccount(c *fiber.Ctx) model.Account {
+	return c.Locals("account").(model.Account)
+}
+
 func setAccount(c *fiber.Ctx, account *model.Account) error {
 	session, err := store.Get(c)
 	if err != nil {
 		return err
 	}
-	session.Set("account", account)
+	session.Set("account", *account)
 	return session.Save()
 }
 
-func noAccess(a *model.Account) bool {
-	return a.Status != account.Normal || a.Role != account.Admin
+func access(a *model.Account, path string) bool {
+	return strings.HasPrefix(path, "/api/account/verification") ||
+		(a.Status == account.Normal && a.Role == account.Admin)
 }

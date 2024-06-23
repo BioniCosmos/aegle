@@ -20,6 +20,8 @@ import (
 
 var ErrAccountExists = errors.New("account exists")
 var ErrPassword = errors.New("password mismatch")
+var ErrVerified = errors.New("verified account")
+var ErrLinkExpired = errors.New("link expired")
 
 func SignUp(body *transfer.SignUpBody) (model.Account, error) {
 	if _, err := model.FindAccount(body.Email); err != nil &&
@@ -57,28 +59,51 @@ func SignUp(body *transfer.SignUpBody) (model.Account, error) {
 	)
 }
 
-func Verify(id string) (model.Account, error) {
+func Verify(id string, a *model.Account) (model.Account, error) {
+	if err := checkStatus(a); err != nil {
+		return model.Account{}, err
+	}
+	if err := model.FindVerificationLink(id); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return model.Account{}, ErrLinkExpired
+		}
+		return model.Account{}, err
+	}
 	return transactionWithValue(
 		func(ctx mongo.SessionContext) (model.Account, error) {
-			link, err := model.DeleteVerificationLink(ctx, id)
-			if err != nil {
+			if err := model.DeleteVerificationLinks(ctx, a.Email); err != nil {
 				return model.Account{}, err
 			}
 			return model.UpdateAccount(
 				ctx,
-				bson.M{"email": link.Email},
+				bson.M{"email": a.Email},
 				bson.M{"$set": bson.M{"status": account.Normal}},
 			)
 		},
 	)
 }
 
-func SendVerificationLink(email string) error {
-	link, err := model.FindVerificationLink(email)
-	if err != nil {
+func SendVerificationLink(account *model.Account) error {
+	if err := checkStatus(account); err != nil {
 		return err
 	}
-	return sendLinkEmail(&link)
+	return transaction(func(ctx mongo.SessionContext) error {
+		if err := model.DeleteVerificationLinks(
+			ctx,
+			account.Email,
+		); err != nil {
+			return err
+		}
+		link := model.VerificationLink{
+			Id:        uuid.NewString(),
+			Email:     account.Email,
+			CreatedAt: time.Now(),
+		}
+		if err := model.InsertVerificationLink(ctx, &link); err != nil {
+			return err
+		}
+		return sendLinkEmail(&link)
+	})
 }
 
 func SignIn(body *transfer.SignInBody) (model.Account, error) {
@@ -98,6 +123,13 @@ func generateCode(length int) string {
 		digits[i] = byte(rand.Intn(10)) + '0'
 	}
 	return string(digits)
+}
+
+func checkStatus(a *model.Account) error {
+	if a.Status != account.Unverified {
+		return ErrVerified
+	}
+	return nil
 }
 
 func sendLinkEmail(link *model.VerificationLink) error {
