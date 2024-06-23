@@ -30,11 +30,9 @@ type ProfileSubscription struct {
 
 var usersColl *mongo.Collection
 
-func FindUser(id *primitive.ObjectID) (User, error) {
+func FindUser(ctx context.Context, id *primitive.ObjectID) (User, error) {
 	user := User{}
-	return user, usersColl.
-		FindOne(context.Background(), bson.M{"_id": *id}).
-		Decode(&user)
+	return user, usersColl.FindOne(ctx, bson.M{"_id": *id}).Decode(&user)
 }
 
 func FindUsers(options *options.FindOptions) ([]User, error) {

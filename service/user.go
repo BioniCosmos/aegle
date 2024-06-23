@@ -50,7 +50,7 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 			if err != nil {
 				return nil, err
 			}
-			user, err := model.FindUser(&body.Id)
+			user, err := model.FindUser(ctx, &body.Id)
 			if err != nil {
 				return nil, err
 			}
@@ -72,7 +72,7 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 			); err != nil {
 				return nil, err
 			}
-			node, err := model.FindNode(&profile.NodeId)
+			node, err := model.FindNode(ctx, &profile.NodeId)
 			if err != nil {
 				return nil, err
 			}
@@ -127,7 +127,7 @@ func DeleteUser(id *primitive.ObjectID) error {
 				if err != nil {
 					return nil, err
 				}
-				node, err := model.FindNode(&profile.NodeId)
+				node, err := model.FindNode(ctx, &profile.NodeId)
 				if err != nil {
 					return nil, err
 				}

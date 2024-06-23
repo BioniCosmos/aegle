@@ -19,7 +19,7 @@ func FindUser(c *fiber.Ctx) error {
 	if err := c.ParamsParser(&params); err != nil {
 		return &ParseError{err}
 	}
-	user, err := model.FindUser(&params.Id)
+	user, err := model.FindUser(context.Background(), &params.Id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
@@ -42,7 +42,7 @@ func FindUserProfiles(c *fiber.Ctx) error {
 	if err := c.QueryParser(&query); err != nil {
 		return &ParseError{err}
 	}
-	user, err := model.FindUser(&query.Id)
+	user, err := model.FindUser(context.Background(), &query.Id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound

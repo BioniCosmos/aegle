@@ -17,7 +17,7 @@ func FindNode(c *fiber.Ctx) error {
 	if err := c.ParamsParser(&params); err != nil {
 		return &ParseError{err}
 	}
-	node, err := model.FindNode(&params.Id)
+	node, err := model.FindNode(context.Background(), &params.Id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound

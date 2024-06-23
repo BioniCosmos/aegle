@@ -18,11 +18,9 @@ type Node struct {
 
 var nodesColl *mongo.Collection
 
-func FindNode(id *primitive.ObjectID) (Node, error) {
+func FindNode(ctx context.Context, id *primitive.ObjectID) (Node, error) {
 	node := Node{}
-	return node, nodesColl.
-		FindOne(context.Background(), bson.M{"_id": *id}).
-		Decode(&node)
+	return node, nodesColl.FindOne(ctx, bson.M{"_id": *id}).Decode(&node)
 }
 
 func FindNodes(options *options.FindOptions) ([]Node, error) {
