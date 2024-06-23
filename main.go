@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/gob"
 	"errors"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"slices"
 	"time"
 
@@ -24,13 +26,20 @@ func main() {
 	loadEnv(mode)
 	if mode == "edge" {
 		edge.Start()
+		return
 	}
 
-	service.Init(model.Init())
+	client := model.Init()
+	defer func() {
+		if err := client.Disconnect(context.Background()); err != nil {
+			panic(err)
+		}
+	}()
+	service.Init(client)
 	setting.Init()
 
 	if err := service.CheckUser(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	ticker := time.NewTicker(24 * time.Hour)
 	go func() {
@@ -61,7 +70,18 @@ func main() {
 	})
 	app.Use(logger.New())
 	handler.Init(app)
-	log.Fatal(app.Listen(os.Getenv("LISTEN")))
+	go func() {
+		if err := app.Listen(os.Getenv("LISTEN")); err != nil {
+			panic(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+	if err := app.Shutdown(); err != nil {
+		panic(err)
+	}
 }
 
 func loadMode() string {

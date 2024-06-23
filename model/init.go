@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +16,7 @@ func Init() *mongo.Client {
 		options.Client().ApplyURI(os.Getenv("DB_URL")),
 	)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	db := client.Database(os.Getenv("DB_NAME"))
 	nodesColl = db.Collection("nodes")

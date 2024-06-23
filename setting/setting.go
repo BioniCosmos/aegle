@@ -1,8 +1,6 @@
 package setting
 
 import (
-	"log"
-
 	"github.com/bionicosmos/aegle/model"
 )
 
@@ -12,6 +10,6 @@ func Init() {
 	var err error
 	X, err = model.FindSetting()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }

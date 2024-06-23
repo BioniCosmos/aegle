@@ -2,9 +2,9 @@ package edge
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
+	"os/signal"
 
 	pb "github.com/bionicosmos/aegle/edge/xray"
 	"google.golang.org/grpc"
@@ -13,10 +13,19 @@ import (
 func Start() {
 	listener, err := net.Listen("tcp", os.Getenv("LISTEN"))
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	server := grpc.NewServer()
 	pb.RegisterXrayServer(server, &pb.Server{})
 	fmt.Println(listener.Addr())
-	log.Fatal(server.Serve(listener))
+	go func() {
+		if err := server.Serve(listener); err != nil {
+			panic(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+	server.GracefulStop()
 }
