@@ -1,6 +1,8 @@
 package transfer
 
 import (
+	"time"
+
 	"github.com/bionicosmos/aegle/model"
 	"github.com/bionicosmos/aegle/model/account"
 )
@@ -21,13 +23,15 @@ type Account struct {
 	Name   string         `json:"name"`
 	Role   account.Role   `json:"role"`
 	Status account.Status `json:"status"`
+	Expire time.Time      `json:"expire"`
 }
 
-func AccountOmitPassword(account *model.Account) Account {
+func ToAccount(account *model.Account, maxAge time.Duration) Account {
 	return Account{
 		Email:  account.Email,
 		Name:   account.Name,
 		Role:   account.Role,
 		Status: account.Status,
+		Expire: time.Now().Add(maxAge).UTC(),
 	}
 }

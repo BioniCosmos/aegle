@@ -31,7 +31,9 @@ func SignUp(c *fiber.Ctx) error {
 	if err := setAccount(c, &account); err != nil {
 		return err
 	}
-	return c.Status(fiber.StatusCreated).JSON(account)
+	return c.
+		Status(fiber.StatusCreated).
+		JSON(transfer.ToAccount(&account, store.Expiration))
 }
 
 func Verify(c *fiber.Ctx) error {
@@ -50,7 +52,7 @@ func Verify(c *fiber.Ctx) error {
 	if err := setAccount(c, &account); err != nil {
 		return err
 	}
-	return c.JSON(transfer.AccountOmitPassword(&account))
+	return c.JSON(transfer.ToAccount(&account, store.Expiration))
 }
 
 func SendVerificationLink(c *fiber.Ctx) error {
@@ -82,7 +84,7 @@ func SignIn(c *fiber.Ctx) error {
 	if err := setAccount(c, &account); err != nil {
 		return err
 	}
-	return c.JSON(transfer.AccountOmitPassword(&account))
+	return c.JSON(transfer.ToAccount(&account, store.Expiration))
 }
 
 func Auth(c *fiber.Ctx) error {
