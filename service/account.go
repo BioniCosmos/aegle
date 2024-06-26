@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"html/template"
 	"math/rand"
 	"net/smtp"
 	"time"
@@ -22,6 +23,8 @@ var ErrAccountExists = errors.New("account exists")
 var ErrPassword = errors.New("password mismatch")
 var ErrVerified = errors.New("verified account")
 var ErrLinkExpired = errors.New("link expired")
+
+var tmpl *template.Template
 
 func SignUp(body *transfer.SignUpBody) (model.Account, error) {
 	if _, err := model.FindAccount(body.Email); err != nil &&
@@ -133,22 +136,24 @@ func checkStatus(a *model.Account) error {
 }
 
 func sendLinkEmail(link *model.VerificationLink) error {
-	return sendMail(
-		link.Email,
-		"Sign-up Verification",
+	body := bytes.Buffer{}
+	if err := tmpl.Execute(
+		&body,
 		setting.X.BaseURL+"/dashboard/verification/"+link.Id,
-	)
+	); err != nil {
+		return err
+	}
+	return sendMail(link.Email, "Sign-up Verification", &body)
 }
 
-func sendMail(to string, subject string, body string) error {
+func sendMail(to string, subject string, body *bytes.Buffer) error {
 	email := setting.X.Email
 	auth := smtp.PlainAuth("", email.Username, email.Password, email.Host)
 	message := bytes.Buffer{}
 	message.WriteString("Subject: ")
 	message.WriteString(subject)
-	message.WriteString("\r\n\r\n")
-	message.WriteString(body)
-	message.WriteString("\r\n")
+	message.WriteString("\r\nMIME-version: 1.0\r\nContent-Type: text/html; charset=\"UTF-8\"\r\n\r\n")
+	body.WriteTo(&message)
 	return smtp.SendMail(
 		fmt.Sprintf("%v:%v", email.Host, email.Port),
 		auth,

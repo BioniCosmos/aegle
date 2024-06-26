@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"html/template"
 
+	"github.com/bionicosmos/aegle/email"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -10,6 +12,7 @@ var client *mongo.Client
 
 func Init(c *mongo.Client) {
 	client = c
+	tmpl = template.Must(template.New("email").Parse(email.Template))
 }
 
 func transaction(f func(ctx mongo.SessionContext) error) error {
