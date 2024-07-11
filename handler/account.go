@@ -87,6 +87,44 @@ func SignIn(c *fiber.Ctx) error {
 	return c.JSON(transfer.ToAccount(&account, store.Expiration))
 }
 
+func CreateTOTP(c *fiber.Ctx) error {
+	account := getAccount(c)
+	body, err := service.CreateTOTP(account.Email)
+	if err != nil {
+		return err
+	}
+	return c.JSON(body)
+}
+
+func ConfirmTOTP(c *fiber.Ctx) error {
+	body := transfer.ConfirmTOTPBody{}
+	if err := c.BodyParser(&body); err != nil {
+		return &ParseError{err}
+	}
+	account := getAccount(c)
+	if err := service.ConfirmTOTP(account.Email, body.Code); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fiber.NewError(fiber.StatusBadRequest, "Uninitialized or expired TOTP")
+		}
+		if errors.Is(err, service.ErrInvalidTOTP) {
+			return fiber.NewError(fiber.StatusUnauthorized, "Invalid TOTP")
+		}
+		return err
+	}
+	return toJSON(c, fiber.StatusCreated)
+}
+
+func DeleteTOTP(c *fiber.Ctx) error {
+	account := getAccount(c)
+	if err := service.DeleteTOTP(account.Email); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fiber.ErrNotFound
+		}
+		return err
+	}
+	return toJSON(c, fiber.StatusOK)
+}
+
 func Auth(c *fiber.Ctx) error {
 	if slices.Contains(
 		[]string{

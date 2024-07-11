@@ -35,3 +35,12 @@ func ToAccount(account *model.Account, maxAge time.Duration) Account {
 		Expire: time.Now().Add(maxAge).UTC(),
 	}
 }
+
+type CreateTOTPBody struct {
+	Secret string `json:"secret"`
+	Image  string `json:"image"`
+}
+
+type ConfirmTOTPBody struct {
+	Code string `json:"code"`
+}

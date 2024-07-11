@@ -2,9 +2,11 @@ package service
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"html/template"
+	"image/jpeg"
 	"math/rand"
 	"net/smtp"
 	"time"
@@ -15,14 +17,18 @@ import (
 	"github.com/bionicosmos/aegle/setting"
 	"github.com/bionicosmos/argon2"
 	"github.com/google/uuid"
+	"github.com/pquerna/otp/totp"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var ErrAccountExists = errors.New("account exists")
-var ErrPassword = errors.New("password mismatch")
-var ErrVerified = errors.New("verified account")
-var ErrLinkExpired = errors.New("link expired")
+var (
+	ErrAccountExists = errors.New("account exists")
+	ErrPassword      = errors.New("password mismatch")
+	ErrVerified      = errors.New("verified account")
+	ErrLinkExpired   = errors.New("link expired")
+	ErrInvalidTOTP   = errors.New("invalid TOTP")
+)
 
 var tmpl *template.Template
 
@@ -118,6 +124,81 @@ func SignIn(body *transfer.SignInBody) (model.Account, error) {
 		return model.Account{}, ErrPassword
 	}
 	return account, nil
+}
+
+func CreateTOTP(email string) (transfer.CreateTOTPBody, error) {
+	return transactionWithValue(
+		func(ctx mongo.SessionContext) (transfer.CreateTOTPBody, error) {
+			if err := model.DeleteTOTP(ctx, email); err != nil {
+				return transfer.CreateTOTPBody{}, err
+			}
+			key, err := totp.Generate(totp.GenerateOpts{
+				Issuer:      "Aegle",
+				AccountName: email,
+			})
+			if err != nil {
+				return transfer.CreateTOTPBody{}, err
+			}
+			if err := model.InsertTOTP(
+				ctx,
+				&model.TOTP{
+					Email:     email,
+					Secret:    key.Secret(),
+					CreatedAt: time.Now(),
+				},
+			); err != nil {
+				return transfer.CreateTOTPBody{}, err
+			}
+			image, err := key.Image(512, 512)
+			if err != nil {
+				return transfer.CreateTOTPBody{}, err
+			}
+			buf := bytes.Buffer{}
+			if err := jpeg.Encode(&buf, image, nil); err != nil {
+				return transfer.CreateTOTPBody{}, err
+			}
+			fmt.Println(key.String(), key.URL())
+			base64.StdEncoding.EncodeToString(buf.Bytes())
+			return transfer.CreateTOTPBody{
+				Secret: key.Secret(),
+				Image: "data:image/jpeg;base64," +
+					base64.StdEncoding.EncodeToString(buf.Bytes()),
+			}, nil
+		},
+	)
+}
+
+func ConfirmTOTP(email string, code string) error {
+	t, err := model.FindTOTP(email)
+	if err != nil {
+		return err
+	}
+	if !totp.Validate(code, t.Secret) {
+		return ErrInvalidTOTP
+	}
+	return transaction(func(ctx mongo.SessionContext) error {
+		if _, err := model.UpdateAccount(
+			ctx,
+			bson.M{"email": email},
+			bson.M{"$set": bson.M{"totp": t.Secret}},
+		); err != nil {
+			return err
+		}
+		return model.DeleteTOTP(ctx, email)
+	})
+}
+
+func DeleteTOTP(email string) error {
+	return transaction(func(ctx mongo.SessionContext) error {
+		if _, err := model.UpdateAccount(
+			ctx,
+			bson.M{"email": email},
+			bson.M{"$unset": bson.M{"totp": ""}},
+		); err != nil {
+			return err
+		}
+		return model.DeleteTOTP(ctx, email)
+	})
 }
 
 func generateCode(length int) string {

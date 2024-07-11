@@ -26,6 +26,7 @@ func Init() *mongo.Client {
 	settingsColl = db.Collection("settings")
 	verificationCodesColl = db.Collection("verificationCodes")
 	verificationLinksColl = db.Collection("verificationLinks")
+	totpColl = db.Collection("totp")
 
 	profilesColl.Indexes().CreateOne(ctx, uniqueIndex("name"))
 	usersColl.Indexes().CreateOne(ctx, uniqueIndex("email"))
@@ -36,6 +37,7 @@ func Init() *mongo.Client {
 	verificationLinksColl.
 		Indexes().
 		CreateOne(ctx, expireIndex("createdAt", day))
+	totpColl.Indexes().CreateOne(ctx, expireIndex("createdAt", 5*minute))
 	return client
 }
 

@@ -14,6 +14,7 @@ type Account struct {
 	Password string         `json:"password"`
 	Role     account.Role   `json:"role"`
 	Status   account.Status `json:"status"`
+	TOTP     string         `json:"totp"`
 }
 
 var accountsColl *mongo.Collection

@@ -8,6 +8,7 @@ require (
 	github.com/gofiber/storage/mongodb v1.3.9
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/pquerna/otp v1.4.0
 	github.com/xtls/xray-core v1.8.11
 	go.mongodb.org/mongo-driver v1.15.0
 	google.golang.org/grpc v1.63.2
@@ -16,6 +17,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/cloudflare/circl v1.3.8 // indirect
 	github.com/dgryski/go-metro v0.0.0-20211217172704-adc40b04c140 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
