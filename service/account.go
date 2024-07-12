@@ -155,7 +155,7 @@ func CreateTOTP(email string) (transfer.CreateTOTPBody, error) {
 			); err != nil {
 				return transfer.CreateTOTPBody{}, err
 			}
-			image, err := key.Image(512, 512)
+			image, err := key.Image(200, 200)
 			if err != nil {
 				return transfer.CreateTOTPBody{}, err
 			}
@@ -163,7 +163,6 @@ func CreateTOTP(email string) (transfer.CreateTOTPBody, error) {
 			if err := jpeg.Encode(&buf, image, nil); err != nil {
 				return transfer.CreateTOTPBody{}, err
 			}
-			fmt.Println(key.String(), key.URL())
 			base64.StdEncoding.EncodeToString(buf.Bytes())
 			return transfer.CreateTOTPBody{
 				Secret: key.Secret(),
