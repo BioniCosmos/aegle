@@ -16,6 +16,10 @@ import (
 
 var store *session.Store
 
+func GetAccount(c *fiber.Ctx) error {
+	return c.JSON(transfer.ToAccount(getSession(c)))
+}
+
 func SignUp(c *fiber.Ctx) error {
 	body := transfer.SignUpBody{}
 	if err := c.BodyParser(&body); err != nil {
@@ -28,17 +32,15 @@ func SignUp(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	if err := setAccount(c, &account); err != nil {
+	if err := setSession(c, &account, transfer.AccountUnverified); err != nil {
 		return err
 	}
-	return c.
-		Status(fiber.StatusCreated).
-		JSON(transfer.ToAccount(&account, store.Expiration))
+	return toJSON(c, fiber.StatusCreated)
 }
 
 func Verify(c *fiber.Ctx) error {
 	id := c.Params("id")
-	account := getAccount(c)
+	account, _ := getSession(c)
 	account, err := service.Verify(id, &account)
 	if err != nil {
 		if errors.Is(err, service.ErrVerified) {
@@ -49,14 +51,14 @@ func Verify(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	if err := setAccount(c, &account); err != nil {
+	if err := setSession(c, &account, transfer.AccountSignedIn); err != nil {
 		return err
 	}
-	return c.JSON(transfer.ToAccount(&account, store.Expiration))
+	return toJSON(c, fiber.StatusOK)
 }
 
 func SendVerificationLink(c *fiber.Ctx) error {
-	account := getAccount(c)
+	account, _ := getSession(c)
 	if err := service.SendVerificationLink(&account); err != nil {
 		if errors.Is(err, service.ErrVerified) {
 			return fiber.ErrConflict
@@ -81,14 +83,18 @@ func SignIn(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	if err := setAccount(c, &account); err != nil {
+	status := transfer.AccountSignedIn
+	if account.TOTP != "" {
+		status = transfer.AccountNeedMFA
+	}
+	if err := setSession(c, &account, status); err != nil {
 		return err
 	}
-	return c.JSON(transfer.ToAccount(&account, store.Expiration))
+	return toJSON(c, fiber.StatusOK)
 }
 
 func CreateTOTP(c *fiber.Ctx) error {
-	account := getAccount(c)
+	account, _ := getSession(c)
 	body, err := service.CreateTOTP(account.Email)
 	if err != nil {
 		return err
@@ -101,10 +107,13 @@ func ConfirmTOTP(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return &ParseError{err}
 	}
-	account := getAccount(c)
+	account, _ := getSession(c)
 	if err := service.ConfirmTOTP(account.Email, body.Code); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fiber.NewError(fiber.StatusBadRequest, "Uninitialized or expired TOTP")
+			return fiber.NewError(
+				fiber.StatusBadRequest,
+				"Uninitialized or expired TOTP",
+			)
 		}
 		if errors.Is(err, service.ErrInvalidTOTP) {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid TOTP")
@@ -115,7 +124,7 @@ func ConfirmTOTP(c *fiber.Ctx) error {
 }
 
 func DeleteTOTP(c *fiber.Ctx) error {
-	account := getAccount(c)
+	account, _ := getSession(c)
 	if err := service.DeleteTOTP(account.Email); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
@@ -136,43 +145,46 @@ func Auth(c *fiber.Ctx) error {
 	) {
 		return c.Next()
 	}
-	account, err := useAccount(c)
+	session, err := store.Get(c)
 	if err != nil {
 		return err
 	}
-	if !access(&account, c.Path()) {
+	if session.Fresh() {
+		return fiber.ErrUnauthorized
+
+	}
+	account := session.Get("account").(model.Account)
+	status := session.Get("status").(transfer.AccountStatus)
+	if !access(&account, status, c.Path()) {
 		return fiber.ErrForbidden
 	}
 	c.Locals("account", account)
+	c.Locals("status", status)
 	return c.Next()
 }
 
-func useAccount(c *fiber.Ctx) (model.Account, error) {
-	session, err := store.Get(c)
-	if err != nil {
-		return model.Account{}, err
-	}
-	account, ok := session.Get("account").(model.Account)
-	if !ok {
-		return model.Account{}, fiber.ErrUnauthorized
-	}
-	return account, nil
+func getSession(c *fiber.Ctx) (model.Account, transfer.AccountStatus) {
+	return c.Locals("account").(model.Account),
+		c.Locals("status").(transfer.AccountStatus)
 }
 
-func getAccount(c *fiber.Ctx) model.Account {
-	return c.Locals("account").(model.Account)
-}
-
-func setAccount(c *fiber.Ctx, account *model.Account) error {
+func setSession(
+	c *fiber.Ctx,
+	account *model.Account,
+	status transfer.AccountStatus,
+) error {
 	session, err := store.Get(c)
 	if err != nil {
 		return err
 	}
 	session.Set("account", *account)
+	session.Set("status", status)
 	return session.Save()
 }
 
-func access(a *model.Account, path string) bool {
+func access(a *model.Account, status transfer.AccountStatus, path string) bool {
 	return strings.HasPrefix(path, "/api/account/verification") ||
-		(a.Status == account.Normal && a.Role == account.Admin)
+		(a.Status == account.Normal &&
+			a.Role == account.Admin &&
+			status == transfer.AccountSignedIn)
 }

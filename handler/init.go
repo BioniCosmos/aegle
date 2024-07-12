@@ -38,6 +38,7 @@ func Init(app *fiber.App) {
 	app.Patch("/api/user", UpdateUserProfiles)
 	app.Delete("/api/user/:id", DeleteUser)
 
+	app.Get("/api/account", GetAccount)
 	app.Post("/api/account/sign-up", SignUp)
 	app.Post("/api/account/verification/:id", Verify)
 	app.Post("/api/account/verification", SendVerificationLink)
