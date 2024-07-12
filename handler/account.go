@@ -7,17 +7,26 @@ import (
 
 	"github.com/bionicosmos/aegle/handler/transfer"
 	"github.com/bionicosmos/aegle/model"
-	"github.com/bionicosmos/aegle/model/account"
 	"github.com/bionicosmos/aegle/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+const (
+	sessionEmail  = "email"
+	sessionStatus = "status"
+)
+
 var store *session.Store
 
 func GetAccount(c *fiber.Ctx) error {
-	return c.JSON(transfer.ToAccount(getSession(c)))
+	email, status := getSession(c)
+	account, err := model.FindAccount(email)
+	if err != nil {
+		return err
+	}
+	return c.JSON(transfer.ToAccount(&account, status))
 }
 
 func SignUp(c *fiber.Ctx) error {
@@ -32,7 +41,11 @@ func SignUp(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	if err := setSession(c, &account, transfer.AccountUnverified); err != nil {
+	if err := setSession(
+		c,
+		account.Email,
+		transfer.AccountUnverified,
+	); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusCreated)
@@ -40,9 +53,8 @@ func SignUp(c *fiber.Ctx) error {
 
 func Verify(c *fiber.Ctx) error {
 	id := c.Params("id")
-	account, _ := getSession(c)
-	account, err := service.Verify(id, &account)
-	if err != nil {
+	email, _ := getSession(c)
+	if err := service.Verify(id, email); err != nil {
 		if errors.Is(err, service.ErrVerified) {
 			return fiber.ErrConflict
 		}
@@ -51,15 +63,15 @@ func Verify(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	if err := setSession(c, &account, transfer.AccountSignedIn); err != nil {
+	if err := setSession(c, email, transfer.AccountSignedIn); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)
 }
 
 func SendVerificationLink(c *fiber.Ctx) error {
-	account, _ := getSession(c)
-	if err := service.SendVerificationLink(&account); err != nil {
+	email, _ := getSession(c)
+	if err := service.SendVerificationLink(email); err != nil {
 		if errors.Is(err, service.ErrVerified) {
 			return fiber.ErrConflict
 		}
@@ -87,15 +99,15 @@ func SignIn(c *fiber.Ctx) error {
 	if account.TOTP != "" {
 		status = transfer.AccountNeedMFA
 	}
-	if err := setSession(c, &account, status); err != nil {
+	if err := setSession(c, account.Email, status); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)
 }
 
 func CreateTOTP(c *fiber.Ctx) error {
-	account, _ := getSession(c)
-	body, err := service.CreateTOTP(account.Email)
+	email, _ := getSession(c)
+	body, err := service.CreateTOTP(email)
 	if err != nil {
 		return err
 	}
@@ -107,8 +119,8 @@ func ConfirmTOTP(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return &ParseError{err}
 	}
-	account, _ := getSession(c)
-	if err := service.ConfirmTOTP(account.Email, body.Code); err != nil {
+	email, _ := getSession(c)
+	if err := service.ConfirmTOTP(email, body.Code); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.NewError(
 				fiber.StatusBadRequest,
@@ -124,8 +136,8 @@ func ConfirmTOTP(c *fiber.Ctx) error {
 }
 
 func DeleteTOTP(c *fiber.Ctx) error {
-	account, _ := getSession(c)
-	if err := service.DeleteTOTP(account.Email); err != nil {
+	email, _ := getSession(c)
+	if err := service.DeleteTOTP(email); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return fiber.ErrNotFound
 		}
@@ -151,40 +163,35 @@ func Auth(c *fiber.Ctx) error {
 	}
 	if session.Fresh() {
 		return fiber.ErrUnauthorized
-
 	}
-	account := session.Get("account").(model.Account)
-	status := session.Get("status").(transfer.AccountStatus)
-	if !access(&account, status, c.Path()) {
+	email := session.Get(sessionEmail).(string)
+	status := session.Get(sessionStatus).(transfer.AccountStatus)
+	if status == transfer.AccountSignedIn ||
+		(status == transfer.AccountNeedMFA && c.Path() == "/api/account/mfa") ||
+		(status == transfer.AccountUnverified &&
+			strings.HasPrefix(c.Path(), "/api/account/verification")) {
 		return fiber.ErrForbidden
 	}
-	c.Locals("account", account)
-	c.Locals("status", status)
+	c.Locals(sessionEmail, email)
+	c.Locals(sessionStatus, status)
 	return c.Next()
 }
 
-func getSession(c *fiber.Ctx) (model.Account, transfer.AccountStatus) {
-	return c.Locals("account").(model.Account),
-		c.Locals("status").(transfer.AccountStatus)
+func getSession(c *fiber.Ctx) (string, transfer.AccountStatus) {
+	return c.Locals(sessionEmail).(string),
+		c.Locals(sessionStatus).(transfer.AccountStatus)
 }
 
 func setSession(
 	c *fiber.Ctx,
-	account *model.Account,
+	email string,
 	status transfer.AccountStatus,
 ) error {
 	session, err := store.Get(c)
 	if err != nil {
 		return err
 	}
-	session.Set("account", *account)
-	session.Set("status", status)
+	session.Set(sessionEmail, email)
+	session.Set(sessionStatus, status)
 	return session.Save()
-}
-
-func access(a *model.Account, status transfer.AccountStatus, path string) bool {
-	return strings.HasPrefix(path, "/api/account/verification") ||
-		(a.Status == account.Normal &&
-			a.Role == account.Admin &&
-			status == transfer.AccountSignedIn)
 }

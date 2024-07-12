@@ -31,7 +31,7 @@ const (
 	AccountNeedMFA    AccountStatus = "needMFA"
 )
 
-func ToAccount(account model.Account, status AccountStatus) Account {
+func ToAccount(account *model.Account, status AccountStatus) Account {
 	return Account{
 		Email:  account.Email,
 		Name:   account.Name,

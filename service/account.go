@@ -68,32 +68,38 @@ func SignUp(body *transfer.SignUpBody) (model.Account, error) {
 	)
 }
 
-func Verify(id string, a *model.Account) (model.Account, error) {
-	if err := checkStatus(a); err != nil {
-		return model.Account{}, err
+func Verify(id string, email string) error {
+	a, err := model.FindAccount(email)
+	if err != nil {
+		return err
+	}
+	if err := checkStatus(&a); err != nil {
+		return err
 	}
 	if err := model.FindVerificationLink(id); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return model.Account{}, ErrLinkExpired
+			return ErrLinkExpired
 		}
-		return model.Account{}, err
+		return err
 	}
-	return transactionWithValue(
-		func(ctx mongo.SessionContext) (model.Account, error) {
-			if err := model.DeleteVerificationLinks(ctx, a.Email); err != nil {
-				return model.Account{}, err
-			}
-			return model.UpdateAccount(
-				ctx,
-				bson.M{"email": a.Email},
-				bson.M{"$set": bson.M{"status": account.Normal}},
-			)
-		},
-	)
+	return transaction(func(ctx mongo.SessionContext) error {
+		if err := model.DeleteVerificationLinks(ctx, a.Email); err != nil {
+			return err
+		}
+		return model.UpdateAccount(
+			ctx,
+			bson.M{"email": a.Email},
+			bson.M{"$set": bson.M{"status": account.Normal}},
+		)
+	})
 }
 
-func SendVerificationLink(account *model.Account) error {
-	if err := checkStatus(account); err != nil {
+func SendVerificationLink(email string) error {
+	account, err := model.FindAccount(email)
+	if err != nil {
+		return err
+	}
+	if err := checkStatus(&account); err != nil {
 		return err
 	}
 	return transaction(func(ctx mongo.SessionContext) error {
@@ -177,27 +183,27 @@ func ConfirmTOTP(email string, code string) error {
 		return ErrInvalidTOTP
 	}
 	return transaction(func(ctx mongo.SessionContext) error {
-		if _, err := model.UpdateAccount(
+		if err := model.DeleteTOTP(ctx, email); err != nil {
+			return err
+		}
+		return model.UpdateAccount(
 			ctx,
 			bson.M{"email": email},
 			bson.M{"$set": bson.M{"totp": t.Secret}},
-		); err != nil {
-			return err
-		}
-		return model.DeleteTOTP(ctx, email)
+		)
 	})
 }
 
 func DeleteTOTP(email string) error {
 	return transaction(func(ctx mongo.SessionContext) error {
-		if _, err := model.UpdateAccount(
+		if err := model.DeleteTOTP(ctx, email); err != nil {
+			return err
+		}
+		return model.UpdateAccount(
 			ctx,
 			bson.M{"email": email},
 			bson.M{"$unset": bson.M{"totp": ""}},
-		); err != nil {
-			return err
-		}
-		return model.DeleteTOTP(ctx, email)
+		)
 	})
 }
 

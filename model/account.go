@@ -32,15 +32,7 @@ func InsertAccount(ctx context.Context, account *Account) error {
 	return err
 }
 
-func UpdateAccount(
-	ctx context.Context,
-	filter any,
-	update any,
-) (Account, error) {
-	account := Account{}
+func UpdateAccount(ctx context.Context, filter any, update any) error {
 	_, err := accountsColl.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return account, err
-	}
-	return account, accountsColl.FindOne(ctx, filter).Decode(&account)
+	return err
 }
