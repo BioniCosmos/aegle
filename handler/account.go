@@ -105,6 +105,27 @@ func SignIn(c *fiber.Ctx) error {
 	return toJSON(c, fiber.StatusOK)
 }
 
+func MFA(c *fiber.Ctx) error {
+	email, status := getSession(c)
+	if status == transfer.AccountSignedIn {
+		return fiber.ErrConflict
+	}
+	body := transfer.ConfirmTOTPBody{}
+	if err := c.BodyParser(&body); err != nil {
+		return &ParseError{err}
+	}
+	if err := service.MFA(email, body.Code); err != nil {
+		if errors.Is(err, service.ErrInvalidMFACode) {
+			return fiber.NewError(fiber.StatusUnauthorized, err.Error())
+		}
+		return err
+	}
+	if err := setSession(c, email, transfer.AccountSignedIn); err != nil {
+		return err
+	}
+	return toJSON(c, fiber.StatusOK)
+}
+
 func CreateTOTP(c *fiber.Ctx) error {
 	email, _ := getSession(c)
 	body, err := service.CreateTOTP(email)
@@ -166,12 +187,15 @@ func Auth(c *fiber.Ctx) error {
 	}
 	email := session.Get(sessionEmail).(string)
 	status := session.Get(sessionStatus).(transfer.AccountStatus)
-	if status == transfer.AccountSignedIn ||
-		(status == transfer.AccountNeedMFA && c.Path() == "/api/account/mfa") ||
-		(status == transfer.AccountUnverified &&
-			strings.HasPrefix(c.Path(), "/api/account/verification")) {
+
+	isSignedIn := status == transfer.AccountSignedIn
+	toMFA := status == transfer.AccountNeedMFA && c.Path() == "/api/account/mfa"
+	toVerify := status == transfer.AccountUnverified &&
+		strings.HasPrefix(c.Path(), "/api/account/verification")
+	if !isSignedIn && !toMFA && !toVerify {
 		return fiber.ErrForbidden
 	}
+
 	c.Locals(sessionEmail, email)
 	c.Locals(sessionStatus, status)
 	return c.Next()

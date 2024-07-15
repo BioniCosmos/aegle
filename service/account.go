@@ -23,11 +23,12 @@ import (
 )
 
 var (
-	ErrAccountExists = errors.New("account exists")
-	ErrPassword      = errors.New("password mismatch")
-	ErrVerified      = errors.New("verified account")
-	ErrLinkExpired   = errors.New("link expired")
-	ErrInvalidTOTP   = errors.New("invalid TOTP")
+	ErrAccountExists  = errors.New("account exists")
+	ErrPassword       = errors.New("password mismatch")
+	ErrVerified       = errors.New("verified account")
+	ErrLinkExpired    = errors.New("link expired")
+	ErrInvalidTOTP    = errors.New("invalid TOTP")
+	ErrInvalidMFACode = errors.New("invalid multi-factor authentication code")
 )
 
 var tmpl *template.Template
@@ -130,6 +131,17 @@ func SignIn(body *transfer.SignInBody) (model.Account, error) {
 		return model.Account{}, ErrPassword
 	}
 	return account, nil
+}
+
+func MFA(email, code string) error {
+	account, err := model.FindAccount(email)
+	if err != nil {
+		return err
+	}
+	if !totp.Validate(code, account.TOTP) {
+		return ErrInvalidMFACode
+	}
+	return nil
 }
 
 func CreateTOTP(email string) (transfer.CreateTOTPBody, error) {
