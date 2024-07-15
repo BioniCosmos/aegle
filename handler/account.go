@@ -21,7 +21,15 @@ const (
 var store *session.Store
 
 func GetAccount(c *fiber.Ctx) error {
-	email, status := getSession(c)
+	session, err := store.Get(c)
+	if err != nil {
+		return err
+	}
+	if session.Fresh() {
+		return c.JSON(nil)
+	}
+	email := session.Get(sessionEmail).(string)
+	status := session.Get(sessionStatus).(transfer.AccountStatus)
 	account, err := model.FindAccount(email)
 	if err != nil {
 		return err
@@ -170,6 +178,7 @@ func DeleteTOTP(c *fiber.Ctx) error {
 func Auth(c *fiber.Ctx) error {
 	if slices.Contains(
 		[]string{
+			"/api/account",
 			"/api/account/sign-up",
 			"/api/account/sign-in",
 			"/api/user/profiles",
