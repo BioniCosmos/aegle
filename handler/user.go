@@ -65,10 +65,11 @@ func InsertUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&user); err != nil {
 		return &ParseError{err}
 	}
-	if err := model.InsertUser(context.Background(), &user); err != nil {
+	id, err := model.InsertUser(context.Background(), &user)
+	if err != nil {
 		return err
 	}
-	return toJSON(c, fiber.StatusCreated)
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": id})
 }
 
 func UpdateUserDate(c *fiber.Ctx) error {

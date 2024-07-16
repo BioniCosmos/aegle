@@ -37,11 +37,11 @@ func FindNodes(options *options.FindOptions) ([]Node, error) {
 	return nodes, cursor.All(ctx, &nodes)
 }
 
-func InsertNode(ctx context.Context, node *Node) error {
+func InsertNode(ctx context.Context, node *Node) (primitive.ObjectID, error) {
 	node.Id = primitive.NewObjectID()
 	node.ProfileNames = make([]string, 0)
 	_, err := nodesColl.InsertOne(ctx, node)
-	return err
+	return node.Id, err
 }
 
 func UpdateNode(ctx context.Context, filter any, update any) (Node, error) {

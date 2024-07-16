@@ -40,10 +40,11 @@ func InsertNode(c *fiber.Ctx) error {
 	if err := c.BodyParser(&node); err != nil {
 		return &ParseError{err}
 	}
-	if err := model.InsertNode(context.Background(), &node); err != nil {
+	id, err := model.InsertNode(context.Background(), &node)
+	if err != nil {
 		return err
 	}
-	return toJSON(c, fiber.StatusCreated)
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": id})
 }
 
 func UpdateNode(c *fiber.Ctx) error {

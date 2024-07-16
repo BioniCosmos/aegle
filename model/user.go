@@ -45,11 +45,11 @@ func FindUsers(options *options.FindOptions) ([]User, error) {
 	return users, cursor.All(ctx, &users)
 }
 
-func InsertUser(ctx context.Context, user *User) error {
+func InsertUser(ctx context.Context, user *User) (primitive.ObjectID, error) {
 	user.Id = primitive.NewObjectID()
 	user.Profiles = make([]ProfileSubscription, 0)
 	_, err := usersColl.InsertOne(ctx, user)
-	return err
+	return user.Id, err
 }
 
 func UpdateUser(ctx context.Context, filter any, update any) error {
