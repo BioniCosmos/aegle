@@ -13,6 +13,7 @@ import (
 
 	"github.com/bionicosmos/aegle/edge"
 	"github.com/bionicosmos/aegle/handler"
+	"github.com/bionicosmos/aegle/handler/transfer"
 	"github.com/bionicosmos/aegle/model"
 	"github.com/bionicosmos/aegle/service"
 	"github.com/bionicosmos/aegle/setting"
@@ -50,7 +51,7 @@ func main() {
 		}
 	}()
 
-	gob.Register(model.Account{})
+	gob.Register(transfer.AccountStatus(""))
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
