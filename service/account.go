@@ -13,7 +13,6 @@ import (
 
 	"github.com/bionicosmos/aegle/handler/transfer"
 	"github.com/bionicosmos/aegle/model"
-	"github.com/bionicosmos/aegle/model/account"
 	"github.com/bionicosmos/aegle/setting"
 	"github.com/bionicosmos/argon2"
 	"github.com/google/uuid"
@@ -46,8 +45,8 @@ func SignUp(body *transfer.SignUpBody) (model.Account, error) {
 				Email:    body.Email,
 				Name:     body.Name,
 				Password: argon2.Hash(body.Password),
-				Role:     account.Member,
-				Status:   account.Unverified,
+				Role:     model.AccountRoleMember,
+				Status:   model.AccountStatusUnverified,
 			}
 			if err := model.InsertAccount(ctx, &account); err != nil {
 				return model.Account{}, err
@@ -90,7 +89,7 @@ func Verify(id string, email string) error {
 		return model.UpdateAccount(
 			ctx,
 			bson.M{"email": a.Email},
-			bson.M{"$set": bson.M{"status": account.Normal}},
+			bson.M{"$set": bson.M{"status": model.AccountStatusNormal}},
 		)
 	})
 }
@@ -227,7 +226,7 @@ func generateCode(length int) string {
 }
 
 func checkStatus(a *model.Account) error {
-	if a.Status != account.Unverified {
+	if a.Status != model.AccountStatusUnverified {
 		return ErrVerified
 	}
 	return nil

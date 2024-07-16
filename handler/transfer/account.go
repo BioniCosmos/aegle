@@ -2,7 +2,6 @@ package transfer
 
 import (
 	"github.com/bionicosmos/aegle/model"
-	"github.com/bionicosmos/aegle/model/account"
 )
 
 type SignUpBody struct {
@@ -17,10 +16,10 @@ type SignInBody struct {
 }
 
 type Account struct {
-	Email  string        `json:"email"`
-	Name   string        `json:"name"`
-	Role   account.Role  `json:"role"`
-	Status AccountStatus `json:"status"`
+	Email  string            `json:"email"`
+	Name   string            `json:"name"`
+	Role   model.AccountRole `json:"role"`
+	Status AccountStatus     `json:"status"`
 }
 
 type AccountStatus string
