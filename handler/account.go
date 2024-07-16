@@ -113,6 +113,15 @@ func SignIn(c *fiber.Ctx) error {
 	return toJSON(c, fiber.StatusOK)
 }
 
+func FindMFA(c *fiber.Ctx) error {
+	email, _ := getSession(c)
+	account, err := model.FindAccount(email)
+	if err != nil {
+		return err
+	}
+	return c.JSON(fiber.Map{"totp": account.TOTP != ""})
+}
+
 func MFA(c *fiber.Ctx) error {
 	email, status := getSession(c)
 	if status == transfer.AccountSignedIn {
