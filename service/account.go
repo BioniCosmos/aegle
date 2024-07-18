@@ -15,6 +15,7 @@ import (
 	"github.com/bionicosmos/aegle/model"
 	"github.com/bionicosmos/aegle/setting"
 	"github.com/bionicosmos/argon2"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/pquerna/otp/totp"
 	"go.mongodb.org/mongo-driver/bson"
@@ -22,12 +23,14 @@ import (
 )
 
 var (
-	ErrAccountExists  = errors.New("account exists")
-	ErrPassword       = errors.New("password mismatch")
-	ErrVerified       = errors.New("verified account")
-	ErrLinkExpired    = errors.New("link expired")
-	ErrInvalidTOTP    = errors.New("invalid TOTP")
-	ErrInvalidMFACode = errors.New("invalid multi-factor authentication code")
+	ErrEmailExists     = fiber.NewError(fiber.StatusConflict, "Email exists")
+	ErrAccountNotExist = fiber.NewError(fiber.StatusNotFound, "Account does not exist")
+	ErrPassword        = fiber.NewError(fiber.StatusBadRequest, "Password mismatch")
+	ErrVerified        = fiber.NewError(fiber.StatusConflict, "Verified account")
+	ErrLinkExpired     = fiber.NewError(fiber.StatusNotFound, "Link expired")
+	ErrTOTPNotFound    = fiber.NewError(fiber.StatusBadRequest, "Uninitialized or expired TOTP")
+	ErrInvalidTOTP     = fiber.NewError(fiber.StatusUnauthorized, "Invalid TOTP")
+	ErrInvalidMFACode  = fiber.NewError(fiber.StatusUnauthorized, "Invalid multi-factor authentication code")
 )
 
 var tmpl *template.Template
@@ -37,7 +40,7 @@ func SignUp(body *transfer.SignUpBody) (model.Account, error) {
 		!errors.Is(err, mongo.ErrNoDocuments) {
 		return model.Account{}, err
 	} else if err == nil {
-		return model.Account{}, ErrAccountExists
+		return model.Account{}, ErrEmailExists
 	}
 	return transactionWithValue(
 		func(ctx mongo.SessionContext) (model.Account, error) {
@@ -124,6 +127,9 @@ func SendVerificationLink(email string) error {
 func SignIn(body *transfer.SignInBody) (model.Account, error) {
 	account, err := model.FindAccount(body.Email)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return model.Account{}, ErrAccountNotExist
+		}
 		return model.Account{}, err
 	}
 	if !argon2.Verify(body.Password, account.Password) {
@@ -187,6 +193,9 @@ func CreateTOTP(email string) (transfer.CreateTOTPBody, error) {
 func ConfirmTOTP(email string, code string) error {
 	t, err := model.FindTOTP(email)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return ErrTOTPNotFound
+		}
 		return err
 	}
 	if !totp.Validate(code, t.Secret) {
@@ -207,6 +216,9 @@ func ConfirmTOTP(email string, code string) error {
 func DeleteTOTP(email string) error {
 	return transaction(func(ctx mongo.SessionContext) error {
 		if err := model.DeleteTOTP(ctx, email); err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return ErrTOTPNotFound
+			}
 			return err
 		}
 		return model.UpdateAccount(

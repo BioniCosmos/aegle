@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"slices"
 	"strings"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/bionicosmos/aegle/service"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -44,9 +42,6 @@ func SignUp(c *fiber.Ctx) error {
 	}
 	account, err := service.SignUp(&body)
 	if err != nil {
-		if errors.Is(err, service.ErrAccountExists) {
-			return fiber.NewError(fiber.StatusConflict, "The email exists.")
-		}
 		return err
 	}
 	if err := setSession(
@@ -63,12 +58,6 @@ func Verify(c *fiber.Ctx) error {
 	id := c.Params("id")
 	email, _ := getSession(c)
 	if err := service.Verify(id, email); err != nil {
-		if errors.Is(err, service.ErrVerified) {
-			return fiber.ErrConflict
-		}
-		if errors.Is(err, service.ErrLinkExpired) {
-			return fiber.ErrNotFound
-		}
 		return err
 	}
 	if err := setSession(c, email, transfer.AccountSignedIn); err != nil {
@@ -80,9 +69,6 @@ func Verify(c *fiber.Ctx) error {
 func SendVerificationLink(c *fiber.Ctx) error {
 	email, _ := getSession(c)
 	if err := service.SendVerificationLink(email); err != nil {
-		if errors.Is(err, service.ErrVerified) {
-			return fiber.ErrConflict
-		}
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)
@@ -95,12 +81,6 @@ func SignIn(c *fiber.Ctx) error {
 	}
 	account, err := service.SignIn(&body)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fiber.NewError(fiber.StatusNotFound, "user does not exist")
-		}
-		if errors.Is(err, service.ErrPassword) {
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
 		return err
 	}
 	status := transfer.AccountSignedIn
@@ -132,9 +112,6 @@ func MFA(c *fiber.Ctx) error {
 		return &ParseError{err}
 	}
 	if err := service.MFA(email, body.Code); err != nil {
-		if errors.Is(err, service.ErrInvalidMFACode) {
-			return fiber.NewError(fiber.StatusUnauthorized, err.Error())
-		}
 		return err
 	}
 	if err := setSession(c, email, transfer.AccountSignedIn); err != nil {
@@ -159,15 +136,6 @@ func ConfirmTOTP(c *fiber.Ctx) error {
 	}
 	email, _ := getSession(c)
 	if err := service.ConfirmTOTP(email, body.Code); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fiber.NewError(
-				fiber.StatusBadRequest,
-				"Uninitialized or expired TOTP",
-			)
-		}
-		if errors.Is(err, service.ErrInvalidTOTP) {
-			return fiber.NewError(fiber.StatusUnauthorized, "Invalid TOTP")
-		}
 		return err
 	}
 	return toJSON(c, fiber.StatusCreated)
@@ -176,9 +144,6 @@ func ConfirmTOTP(c *fiber.Ctx) error {
 func DeleteTOTP(c *fiber.Ctx) error {
 	email, _ := getSession(c)
 	if err := service.DeleteTOTP(email); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fiber.ErrNotFound
-		}
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)
