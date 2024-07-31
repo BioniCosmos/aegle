@@ -39,6 +39,18 @@ func ToAccount(account *model.Account, status AccountStatus) Account {
 	}
 }
 
+type MFABody struct {
+	Type MFAType `json:"type"`
+	Code string  `json:"code"`
+}
+
+type MFAType string
+
+const (
+	MFATypeTOTP         MFAType = "totp"
+	MFATypeRecoveryCode MFAType = "recoveryCode"
+)
+
 type CreateTOTPBody struct {
 	Secret string `json:"secret"`
 	Image  string `json:"image"`

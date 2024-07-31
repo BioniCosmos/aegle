@@ -48,6 +48,8 @@ func Init(app *fiber.App) {
 	app.Get("/api/account/mfa/totp", CreateTOTP)
 	app.Post("/api/account/mfa/totp", ConfirmTOTP)
 	app.Delete("/api/account/mfa/totp", DeleteTOTP)
+	app.Get("/api/account/mfa/recovery-codes", GetRecoveryCodes)
+	app.Post("/api/account/mfa/recovery-codes", RenewRecoveryCodes)
 
 	store = session.New(session.Config{
 		Expiration: time.Hour * 24 * 365,

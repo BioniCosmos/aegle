@@ -13,7 +13,7 @@ type Account struct {
 	Password string        `json:"password"`
 	Role     AccountRole   `json:"role"`
 	Status   AccountStatus `json:"status"`
-	TOTP     string        `json:"totp"`
+	MFA      MFA           `json:"mfa"`
 }
 
 type AccountRole string
@@ -26,6 +26,11 @@ const (
 	AccountStatusNormal     AccountStatus = "normal"
 	AccountStatusUnverified AccountStatus = "unverified"
 )
+
+type MFA struct {
+	TOTP         string
+	RecoveryCode bool `bson:"recoveryCode"`
+}
 
 var accountsColl *mongo.Collection
 

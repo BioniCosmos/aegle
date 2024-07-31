@@ -84,7 +84,7 @@ func SignIn(c *fiber.Ctx) error {
 		return err
 	}
 	status := transfer.AccountSignedIn
-	if account.TOTP != "" {
+	if account.MFA.TOTP != "" {
 		status = transfer.AccountNeedMFA
 	}
 	if err := setSession(c, account.Email, status); err != nil {
@@ -99,7 +99,7 @@ func FindMFA(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(fiber.Map{"totp": account.TOTP != ""})
+	return c.JSON(fiber.Map{"totp": account.MFA.TOTP != ""})
 }
 
 func MFA(c *fiber.Ctx) error {
@@ -107,11 +107,11 @@ func MFA(c *fiber.Ctx) error {
 	if status == transfer.AccountSignedIn {
 		return fiber.ErrConflict
 	}
-	body := transfer.ConfirmTOTPBody{}
+	body := transfer.MFABody{}
 	if err := c.BodyParser(&body); err != nil {
 		return &ParseError{err}
 	}
-	if err := service.MFA(email, body.Code); err != nil {
+	if err := service.MFA(email, &body); err != nil {
 		return err
 	}
 	if err := setSession(c, email, transfer.AccountSignedIn); err != nil {
@@ -144,6 +144,23 @@ func ConfirmTOTP(c *fiber.Ctx) error {
 func DeleteTOTP(c *fiber.Ctx) error {
 	email, _ := getSession(c)
 	if err := service.DeleteTOTP(email); err != nil {
+		return err
+	}
+	return toJSON(c, fiber.StatusOK)
+}
+
+func GetRecoveryCodes(c *fiber.Ctx) error {
+	email, _ := getSession(c)
+	codes, err := service.GetRecoveryCodes(email)
+	if err != nil {
+		return err
+	}
+	return c.JSON(codes)
+}
+
+func RenewRecoveryCodes(c *fiber.Ctx) error {
+	email, _ := getSession(c)
+	if _, err := service.RenewRecoveryCodes(email); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)

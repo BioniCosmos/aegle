@@ -27,6 +27,7 @@ func Init() *mongo.Client {
 	verificationCodesColl = db.Collection("verificationCodes")
 	verificationLinksColl = db.Collection("verificationLinks")
 	totpColl = db.Collection("totp")
+	recoveryCodesColl = db.Collection("recoveryCodes")
 
 	profilesColl.Indexes().CreateOne(ctx, uniqueIndex("name"))
 	usersColl.Indexes().CreateOne(ctx, uniqueIndex("email"))

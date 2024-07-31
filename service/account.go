@@ -2,12 +2,15 @@ package service
 
 import (
 	"bytes"
+	"context"
+	cryptoRand "crypto/rand"
+	"encoding/base32"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"html/template"
 	"image/jpeg"
-	"math/rand"
+	mathRand "math/rand"
 	"net/smtp"
 	"time"
 
@@ -23,14 +26,17 @@ import (
 )
 
 var (
-	ErrEmailExists     = fiber.NewError(fiber.StatusConflict, "Email exists")
-	ErrAccountNotExist = fiber.NewError(fiber.StatusNotFound, "Account does not exist")
-	ErrPassword        = fiber.NewError(fiber.StatusBadRequest, "Password mismatch")
-	ErrVerified        = fiber.NewError(fiber.StatusConflict, "Verified account")
-	ErrLinkExpired     = fiber.NewError(fiber.StatusNotFound, "Link expired")
-	ErrTOTPNotFound    = fiber.NewError(fiber.StatusBadRequest, "Uninitialized or expired TOTP")
-	ErrInvalidTOTP     = fiber.NewError(fiber.StatusUnauthorized, "Invalid TOTP")
-	ErrInvalidMFACode  = fiber.NewError(fiber.StatusUnauthorized, "Invalid multi-factor authentication code")
+	ErrEmailExists         = fiber.NewError(fiber.StatusConflict, "Email exists")
+	ErrAccountNotExist     = fiber.NewError(fiber.StatusNotFound, "Account does not exist")
+	ErrPassword            = fiber.NewError(fiber.StatusBadRequest, "Password mismatch")
+	ErrVerified            = fiber.NewError(fiber.StatusConflict, "Verified account")
+	ErrLinkExpired         = fiber.NewError(fiber.StatusNotFound, "Link expired")
+	ErrTOTPNotFound        = fiber.NewError(fiber.StatusBadRequest, "Uninitialized or expired TOTP")
+	ErrInvalidTOTP         = fiber.NewError(fiber.StatusUnauthorized, "Invalid TOTP")
+	ErrDisabledAuthType    = fiber.NewError(fiber.StatusConflict, "The authentication type not enabled")
+	ErrInvalidMFACode      = fiber.NewError(fiber.StatusUnauthorized, "Invalid multi-factor authentication code")
+	ErrNoNeedRecoveryCode  = fiber.NewError(fiber.StatusConflict, "No need to generate recovery codes")
+	ErrInvalidRecoveryCode = fiber.NewError(fiber.StatusBadRequest, "Invalid recovery code")
 )
 
 var tmpl *template.Template
@@ -138,13 +144,39 @@ func SignIn(body *transfer.SignInBody) (model.Account, error) {
 	return account, nil
 }
 
-func MFA(email, code string) error {
+func MFA(email string, mfaBody *transfer.MFABody) error {
 	account, err := model.FindAccount(email)
 	if err != nil {
 		return err
 	}
-	if !totp.Validate(code, account.TOTP) {
-		return ErrInvalidMFACode
+	switch mfaBody.Type {
+	case transfer.MFATypeTOTP:
+		if account.MFA.TOTP == "" {
+			return ErrDisabledAuthType
+		}
+		if !totp.Validate(mfaBody.Code, account.MFA.TOTP) {
+			return ErrInvalidMFACode
+		}
+	case transfer.MFATypeRecoveryCode:
+		if !account.MFA.RecoveryCode {
+			return ErrDisabledAuthType
+		}
+		filter := bson.M{"email": email, "code": mfaBody.Code}
+		code, err := model.FindRecoveryCode(context.Background(), filter)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return ErrInvalidRecoveryCode
+			}
+			return err
+		}
+		if code.Used {
+			return ErrInvalidRecoveryCode
+		}
+		if err := model.UpdateRecoveryCode(context.Background(), filter, bson.M{"": bson.M{"used": true}}); err != nil {
+			return err
+		}
+	default:
+		return ErrDisabledAuthType
 	}
 	return nil
 }
@@ -208,7 +240,7 @@ func ConfirmTOTP(email string, code string) error {
 		return model.UpdateAccount(
 			ctx,
 			bson.M{"email": email},
-			bson.M{"$set": bson.M{"totp": t.Secret}},
+			bson.M{"$set": bson.M{"mfa": bson.M{"totp": t.Secret}}},
 		)
 	})
 }
@@ -224,15 +256,61 @@ func DeleteTOTP(email string) error {
 		return model.UpdateAccount(
 			ctx,
 			bson.M{"email": email},
-			bson.M{"$unset": bson.M{"totp": ""}},
+			bson.M{"$unset": bson.M{"mfa": bson.M{"totp": ""}}},
 		)
 	})
 }
 
+func GetRecoveryCodes(email string) ([]model.RecoveryCode, error) {
+	account, err := model.FindAccount(email)
+	if err != nil {
+		return nil, err
+	}
+	if account.MFA.TOTP == "" {
+		return nil, ErrNoNeedRecoveryCode
+	}
+	count, err := model.CountRecoveryCodes(context.Background(), email)
+	if err != nil {
+		return nil, err
+	}
+	if count == 0 {
+		return RenewRecoveryCodes(email)
+	}
+	return model.FindRecoveryCodes(context.Background(), email)
+}
+
+func RenewRecoveryCodes(email string) ([]model.RecoveryCode, error) {
+	account, err := model.FindAccount(email)
+	if err != nil {
+		return nil, err
+	}
+	if account.MFA.TOTP == "" {
+		return nil, ErrNoNeedRecoveryCode
+	}
+	codes := []model.RecoveryCode{}
+	newCodes, err := generateRecoveryCodes(10, 8)
+	if err != nil {
+		return nil, err
+	}
+	for _, code := range newCodes {
+		codes = append(
+			codes,
+			model.RecoveryCode{Code: code, Used: false, Email: email},
+		)
+	}
+	return codes, transaction(func(ctx mongo.SessionContext) error {
+		if err := model.DeleteRecoveryCodes(ctx, email); err != nil {
+			return err
+		}
+		return model.InsertRecoveryCodes(ctx, codes)
+	})
+}
+
+//lint:ignore U1000 todo
 func generateCode(length int) string {
 	digits := make([]byte, length)
 	for i := range length {
-		digits[i] = byte(rand.Intn(10)) + '0'
+		digits[i] = byte(mathRand.Intn(10)) + '0'
 	}
 	return string(digits)
 }
@@ -270,4 +348,26 @@ func sendMail(to string, subject string, body *bytes.Buffer) error {
 		[]string{to},
 		message.Bytes(),
 	)
+}
+
+func generateRecoveryCode(n int) (string, error) {
+	bytes := make([]byte, n)
+	_, err := cryptoRand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	encoded := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(bytes)
+	return encoded[:n], nil
+}
+
+func generateRecoveryCodes(count, length int) ([]string, error) {
+	var codes []string
+	for i := 0; i < count; i++ {
+		code, err := generateRecoveryCode(length)
+		if err != nil {
+			return nil, err
+		}
+		codes = append(codes, code)
+	}
+	return codes, nil
 }
