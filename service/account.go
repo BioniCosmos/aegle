@@ -172,7 +172,11 @@ func MFA(email string, mfaBody *transfer.MFABody) error {
 		if code.Used {
 			return ErrInvalidRecoveryCode
 		}
-		if err := model.UpdateRecoveryCode(context.Background(), filter, bson.M{"": bson.M{"used": true}}); err != nil {
+		if err := model.UpdateRecoveryCode(
+			context.Background(),
+			filter,
+			bson.M{"$set": bson.M{"used": true}},
+		); err != nil {
 			return err
 		}
 	default:
@@ -274,7 +278,18 @@ func GetRecoveryCodes(email string) ([]model.RecoveryCode, error) {
 		return nil, err
 	}
 	if count == 0 {
-		return RenewRecoveryCodes(email)
+		return transactionWithValue(
+			func(ctx mongo.SessionContext) ([]model.RecoveryCode, error) {
+				if err := model.UpdateAccount(
+					ctx,
+					bson.M{"email": email},
+					bson.M{"$set": bson.M{"mfa.recoveryCode": true}},
+				); err != nil {
+					return nil, err
+				}
+				return RenewRecoveryCodes(email)
+			},
+		)
 	}
 	return model.FindRecoveryCodes(context.Background(), email)
 }
@@ -356,7 +371,10 @@ func generateRecoveryCode(n int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	encoded := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(bytes)
+	encoded := base32.
+		StdEncoding.
+		WithPadding(base32.NoPadding).
+		EncodeToString(bytes)
 	return encoded[:n], nil
 }
 
