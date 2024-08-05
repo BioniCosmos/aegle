@@ -29,6 +29,7 @@ jobs:
         with:
           node-version: latest
           cache: 'pnpm'
+          cache-dependency-path: email/pnpm-lock.yaml
       - name: Build the email template
         run: |
           cd email
