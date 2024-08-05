@@ -105,8 +105,8 @@ func loadEnv(mode string) {
 			os.Setenv("DB_NAME", "aegle")
 		}
 	} else {
-		if os.Getenv("XRAY_CONFIG") == "" {
-			os.Setenv("XRAY_CONFIG", "/usr/local/etc/xray/inbounds.json")
+		if os.Getenv("XRAY_CONFIG_DIR") == "" {
+			os.Setenv("XRAY_CONFIG_DIR", "/usr/local/etc/xray/")
 		}
 	}
 }

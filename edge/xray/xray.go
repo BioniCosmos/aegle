@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path"
 	"slices"
 	"sync"
 )
@@ -116,7 +117,7 @@ type store struct {
 var mutex sync.Mutex
 
 func storeRead() (store, error) {
-	path := os.Getenv("XRAY_CONFIG")
+	path := os.Getenv("XRAY_CONFIG_DIR")
 	mutex.Lock()
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -138,7 +139,11 @@ func (store *store) apply() (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.WriteFile(store.path, data, 0644); err != nil {
+	if err := os.WriteFile(
+		path.Join(store.path, "inbounds.json"),
+		data,
+		0644,
+	); err != nil {
 		return nil, err
 	}
 	message, err := exec.
