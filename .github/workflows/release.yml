@@ -20,6 +20,17 @@ jobs:
         with:
           go-version-file: go.mod
           check-latest: true
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'pnpm'
+      - name: Build the email template
+        run: |
+          cd email
+          pnpm install
+          pnpm run export
       - name: Build
         run: go build -o aegle-${{ matrix.goos }}-${{ matrix.goarch }} -ldflags "-w -s -buildid=" -trimpath
         env:
