@@ -93,6 +93,17 @@ func SignIn(c *fiber.Ctx) error {
 	return toJSON(c, fiber.StatusOK)
 }
 
+func SignOut(c *fiber.Ctx) error {
+	session, err := store.Get(c)
+	if err != nil {
+		return err
+	}
+	if err := session.Destroy(); err != nil {
+		return err
+	}
+	return toJSON(c, fiber.StatusOK)
+}
+
 func FindMFA(c *fiber.Ctx) error {
 	email, _ := getSession(c)
 	account, err := model.FindAccount(email)
