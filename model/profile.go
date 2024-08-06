@@ -17,13 +17,6 @@ type Profile struct {
 
 var profilesColl *mongo.Collection
 
-func FindProfile(id *primitive.ObjectID) (Profile, error) {
-	profile := Profile{}
-	return profile, profilesColl.
-		FindOne(context.Background(), bson.M{"_id": *id}).
-		Decode(&profile)
-}
-
 func FindProfiles() ([]Profile, error) {
 	ctx := context.Background()
 	cursor, err := profilesColl.Find(ctx, bson.M{})
