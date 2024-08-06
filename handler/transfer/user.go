@@ -10,9 +10,8 @@ type FindUserProfilesQuery struct {
 }
 
 type UpdateUserDateBody struct {
-	Id       primitive.ObjectID `json:"id"`
-	Cycles   int                `json:"cycles"`
-	NextDate string             `json:"nextDate"`
+	Id     primitive.ObjectID `json:"id"`
+	Cycles int                `json:"cycles"`
 }
 
 type UpdateUserProfilesBody struct {

@@ -80,9 +80,8 @@ func UpdateUserDate(c *fiber.Ctx) error {
 	if err := model.UpdateUser(
 		context.Background(),
 		bson.M{"_id": body.Id},
-		bson.M{
-			"$set": bson.M{"cycles": body.Cycles, "nextDate": body.NextDate},
-		}); err != nil {
+		bson.M{"$set": bson.M{"cycles": body.Cycles}},
+	); err != nil {
 		return err
 	}
 	return toJSON(c, fiber.StatusOK)

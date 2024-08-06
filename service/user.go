@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"strings"
 	"sync"
 	"time"
 
@@ -145,14 +144,7 @@ func CheckUser() error {
 	wg := sync.WaitGroup{}
 	errCh := make(chan error)
 	for _, user := range users {
-		nextDate, err := time.Parse(
-			time.RFC3339,
-			strings.Split(user.NextDate, "[")[0],
-		)
-		if err != nil {
-			return err
-		}
-		if nextDate.Before(time.Now()) {
+		if adjustMonths(user.StartDate, user.Cycles).Before(time.Now()) {
 			for _, profile := range user.Profiles {
 				wg.Add(1)
 				go func() {
@@ -178,4 +170,13 @@ func CheckUser() error {
 		}
 	}
 	return nil
+}
+
+func adjustMonths(date time.Time, months int) time.Time {
+	originalDay := date.Day()
+	newDate := date.AddDate(0, months, 0)
+	if newDate.Day() != originalDay {
+		newDate = newDate.AddDate(0, 0, -newDate.Day())
+	}
+	return newDate
 }
