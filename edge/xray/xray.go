@@ -111,15 +111,13 @@ func (*Server) RemoveUser(
 
 type store struct {
 	inbounds []map[string]any
-	path     string
 }
 
 var mutex sync.Mutex
 
 func storeRead() (store, error) {
-	path := os.Getenv("XRAY_CONFIG_DIR")
 	mutex.Lock()
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(inboundsPath())
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return store{}, err
@@ -130,7 +128,7 @@ func storeRead() (store, error) {
 	if err := json.Unmarshal(data, &m); err != nil {
 		return store{}, err
 	}
-	return store{inbounds: m.Inbounds, path: path}, nil
+	return store{inbounds: m.Inbounds}, nil
 }
 
 func (store *store) apply() (*Response, error) {
@@ -139,15 +137,11 @@ func (store *store) apply() (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.WriteFile(
-		path.Join(store.path, "inbounds.json"),
-		data,
-		0644,
-	); err != nil {
+	if err := os.WriteFile(inboundsPath(), data, 0644); err != nil {
 		return nil, err
 	}
 	message, err := exec.
-		Command("xray", "run", "-confdir", store.path, "-test").
+		Command("xray", "run", "-confdir", configDir(), "-test").
 		Output()
 	if err != nil {
 		return nil, errors.New(string(message))
@@ -173,4 +167,12 @@ func fillNil(inbound map[string]any) {
 	if settings := inbound["settings"].(map[string]any); settings["clients"] == nil {
 		settings["clients"] = make([]any, 0)
 	}
+}
+
+func configDir() string {
+	return os.Getenv("XRAY_CONFIG_DIR")
+}
+
+func inboundsPath() string {
+	return path.Join(configDir(), "inbounds.json")
 }
