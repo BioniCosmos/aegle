@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,7 +14,7 @@ type User struct {
 	Name      string                `json:"name"`
 	Email     string                `json:"email"`
 	Level     uint32                `json:"level"`
-	StartDate time.Time             `json:"startDate" bson:"startDate"`
+	StartDate string                `json:"startDate" bson:"startDate"`
 	Cycles    int                   `json:"cycles"`
 	UUID      string                `json:"uuid" bson:"uuid"`
 	Flow      string                `json:"flow"`

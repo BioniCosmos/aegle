@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -143,8 +144,23 @@ func CheckUser() error {
 	}
 	wg := sync.WaitGroup{}
 	errCh := make(chan error)
+	resolveTemporal := func(input string) (string, string) {
+		bracketIndex := strings.LastIndex(input, "[")
+		return input[:bracketIndex], input[bracketIndex+1 : len(input)-1]
+	}
+	parse := func(dateTime string, timeZone string) (time.Time, error) {
+		tz, err := time.LoadLocation(timeZone)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return time.ParseInLocation(time.RFC3339Nano, dateTime, tz)
+	}
 	for _, user := range users {
-		if adjustMonths(user.StartDate, user.Cycles).Before(time.Now()) {
+		startDate, err := parse(resolveTemporal(user.StartDate))
+		if err != nil {
+			return err
+		}
+		if adjustMonths(startDate, user.Cycles).Before(time.Now()) {
 			for _, profile := range user.Profiles {
 				wg.Add(1)
 				go func() {
