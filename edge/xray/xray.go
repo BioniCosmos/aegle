@@ -71,7 +71,7 @@ func (*Server) AddUser(
 		return nil, err
 	}
 	proto := inbound["protocol"]
-	var client map[string]any
+	client := map[string]any{}
 	switch proto {
 	case "vless":
 		client = map[string]any{"id": uuid, "level": level, "email": email, "flow": flow}

@@ -33,7 +33,7 @@ func FindNodes(options *options.FindOptions) ([]Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	var nodes []Node
+	nodes := []Node{}
 	return nodes, cursor.All(ctx, &nodes)
 }
 

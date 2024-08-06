@@ -41,7 +41,7 @@ func FindUsers(options *options.FindOptions) ([]User, error) {
 	if err != nil {
 		return nil, err
 	}
-	var users []User
+	users := []User{}
 	return users, cursor.All(ctx, &users)
 }
 

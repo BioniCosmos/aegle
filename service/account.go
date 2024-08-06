@@ -379,7 +379,7 @@ func generateRecoveryCode(n int) (string, error) {
 }
 
 func generateRecoveryCodes(count, length int) ([]string, error) {
-	var codes []string
+	codes := []string{}
 	for i := 0; i < count; i++ {
 		code, err := generateRecoveryCode(length)
 		if err != nil {

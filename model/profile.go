@@ -23,7 +23,7 @@ func FindProfiles() ([]Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	var profiles []Profile
+	profiles := []Profile{}
 	return profiles, cursor.All(ctx, &profiles)
 }
 
@@ -56,7 +56,7 @@ func DeleteProfiles(ctx context.Context, filter any) ([]Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	var profiles []Profile
+	profiles := []Profile{}
 	if err := cursor.All(ctx, &profiles); err != nil {
 		return nil, err
 	}

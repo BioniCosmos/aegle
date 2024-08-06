@@ -54,7 +54,7 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 			if err != nil {
 				return nil, err
 			}
-			var arrayFilter bson.M
+			arrayFilter := bson.M{}
 			if body.Action == "add" {
 				link, err := subscription.Generate(&profile, &user)
 				if err != nil {

@@ -28,7 +28,7 @@ func FindRecoveryCodes(
 	if err != nil {
 		return nil, err
 	}
-	var codes []RecoveryCode
+	codes := []RecoveryCode{}
 	return codes, cursor.All(ctx, &codes)
 }
 
