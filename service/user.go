@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -33,129 +32,109 @@ func UpdateUserProfiles(body *transfer.UpdateUserProfilesBody) error {
 	if !ok {
 		return ErrUnsupportedAction
 	}
-	ctx := context.Background()
-	session, err := client.StartSession()
-	if err != nil {
-		return err
-	}
-	defer session.EndSession(ctx)
-	_, err = session.WithTransaction(
-		ctx,
-		func(ctx mongo.SessionContext) (interface{}, error) {
-			profile, err := model.UpdateProfile(
-				ctx,
-				bson.M{"name": body.ProfileName},
-				bson.M{arrayAction: bson.M{"userIds": body.Id}},
-			)
+	return transaction(func(ctx mongo.SessionContext) error {
+		profile, err := model.UpdateProfile(
+			ctx,
+			bson.M{"name": body.ProfileName},
+			bson.M{arrayAction: bson.M{"userIds": body.Id}},
+		)
+		if err != nil {
+			return err
+		}
+		user, err := model.FindUser(ctx, &body.Id)
+		if err != nil {
+			return err
+		}
+		arrayFilter := bson.M{}
+		if body.Action == "add" {
+			link, err := subscription.Generate(&profile, &user)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			user, err := model.FindUser(ctx, &body.Id)
-			if err != nil {
-				return nil, err
-			}
-			arrayFilter := bson.M{}
-			if body.Action == "add" {
-				link, err := subscription.Generate(&profile, &user)
-				if err != nil {
-					return nil, err
-				}
-				arrayFilter = bson.M{"name": body.ProfileName, "link": link}
-			}
-			if body.Action == "remove" {
-				arrayFilter = bson.M{"name": body.ProfileName}
-			}
-			if err := model.UpdateUser(
-				ctx,
-				bson.M{"_id": body.Id},
-				bson.M{arrayAction: bson.M{"profiles": arrayFilter}},
-			); err != nil {
-				return nil, err
-			}
-			node, err := model.FindNode(ctx, &profile.NodeId)
-			if err != nil {
-				return nil, err
-			}
-			if body.Action == "add" {
-				return nil, edge.AddUser(
-					node.APIAddress,
-					&pb.AddUserRequest{
-						ProfileName: body.ProfileName,
-						User: &pb.User{
-							Email: user.Email,
-							Level: user.Level,
-							Uuid:  user.UUID,
-							Flow:  user.Flow,
-						},
-					},
-				)
-			}
-			return nil, edge.RemoveUser(
+			arrayFilter = bson.M{"name": body.ProfileName, "link": link}
+		}
+		if body.Action == "remove" {
+			arrayFilter = bson.M{"name": body.ProfileName}
+		}
+		if err := model.UpdateUser(
+			ctx,
+			bson.M{"_id": body.Id},
+			bson.M{arrayAction: bson.M{"profiles": arrayFilter}},
+		); err != nil {
+			return err
+		}
+		node, err := model.FindNode(ctx, &profile.NodeId)
+		if err != nil {
+			return err
+		}
+		if body.Action == "add" {
+			return edge.AddUser(
 				node.APIAddress,
-				&pb.RemoveUserRequest{
+				&pb.AddUserRequest{
 					ProfileName: body.ProfileName,
-					Email:       user.Email,
+					User: &pb.User{
+						Email: user.Email,
+						Level: user.Level,
+						Uuid:  user.UUID,
+						Flow:  user.Flow,
+					},
 				},
 			)
-		},
-	)
-	return err
+		}
+		return edge.RemoveUser(
+			node.APIAddress,
+			&pb.RemoveUserRequest{
+				ProfileName: body.ProfileName,
+				Email:       user.Email,
+			},
+		)
+	})
 }
 
 func DeleteUser(id *primitive.ObjectID) error {
-	ctx := context.Background()
-	session, err := client.StartSession()
-	if err != nil {
-		return err
-	}
-	defer session.EndSession(ctx)
-	_, err = session.WithTransaction(
-		ctx,
-		func(ctx mongo.SessionContext) (interface{}, error) {
-			user, err := model.DeleteUser(ctx, id)
+	return transaction(func(ctx mongo.SessionContext) error {
+		user, err := model.DeleteUser(ctx, id)
+		if err != nil {
+			return err
+		}
+		wg := sync.WaitGroup{}
+		errCh := make(chan error)
+		for _, profile := range user.Profiles {
+			profile, err := model.UpdateProfile(
+				ctx,
+				bson.M{"name": profile.Name},
+				bson.M{"$pull": bson.M{"userIds": user.Id}},
+			)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			wg := sync.WaitGroup{}
-			errCh := make(chan error)
-			for _, profile := range user.Profiles {
-				profile, err := model.UpdateProfile(
-					ctx,
-					bson.M{"name": profile.Name},
-					bson.M{"$pull": bson.M{"userIds": user.Id}},
-				)
-				if err != nil {
-					return nil, err
-				}
-				node, err := model.FindNode(ctx, &profile.NodeId)
-				if err != nil {
-					return nil, err
-				}
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					errCh <- edge.RemoveUser(
-						node.APIAddress,
-						&pb.RemoveUserRequest{
-							ProfileName: profile.Name,
-							Email:       user.Email,
-						},
-					)
-				}()
+			node, err := model.FindNode(ctx, &profile.NodeId)
+			if err != nil {
+				return err
 			}
+			wg.Add(1)
 			go func() {
-				wg.Wait()
-				close(errCh)
+				defer wg.Done()
+				errCh <- edge.RemoveUser(
+					node.APIAddress,
+					&pb.RemoveUserRequest{
+						ProfileName: profile.Name,
+						Email:       user.Email,
+					},
+				)
 			}()
-			for err := range errCh {
-				if err != nil {
-					return nil, err
-				}
+		}
+		go func() {
+			wg.Wait()
+			close(errCh)
+		}()
+		for err := range errCh {
+			if err != nil {
+				return err
 			}
-			return nil, nil
-		},
-	)
-	return err
+		}
+		return nil
+	})
 }
 
 func CheckUser() error {

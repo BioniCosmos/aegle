@@ -30,9 +30,7 @@ func transactionWithValue[T any](
 		func(ctx mongo.SessionContext) error {
 			v, err := ctx.WithTransaction(
 				ctx,
-				func(ctx mongo.SessionContext) (any, error) {
-					return f(ctx)
-				},
+				func(ctx mongo.SessionContext) (any, error) { return f(ctx) },
 			)
 			if v != nil {
 				value = v.(T)
