@@ -8,10 +8,8 @@ import (
 )
 
 type Setting struct {
-	BaseURL   string `bson:"baseURL"`
-	Home      string
-	Dashboard string
-	Email     *Email
+	BaseURL string `bson:"baseURL"`
+	Email   *Email
 }
 
 type Email struct {

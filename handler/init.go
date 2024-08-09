@@ -5,17 +5,17 @@ import (
 	"path"
 	"time"
 
-	"github.com/bionicosmos/aegle/setting"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/storage/mongodb"
 )
 
 func Init(app *fiber.App) {
-	app.Static("/", setting.X.Home)
-	app.Static("/dashboard/", setting.X.Dashboard)
+	app.Static("/", os.Getenv("STATIC_HOME"))
+	dashboard := os.Getenv("STATIC_DASHBOARD")
+	app.Static("/dashboard/", dashboard)
 	app.Use("/dashboard/", func(c *fiber.Ctx) error {
-		return c.SendFile(path.Join(setting.X.Dashboard, "index.html"))
+		return c.SendFile(path.Join(dashboard, "index.html"))
 	})
 
 	app.Use("/api", Auth)
