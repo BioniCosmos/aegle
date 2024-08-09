@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -23,10 +24,12 @@ var settingsColl *mongo.Collection
 
 const id = "config"
 
-func FindSetting() (Setting, error) {
-	setting := Setting{}
-	return setting,
-		settingsColl.
-			FindOne(context.Background(), bson.M{"_id": id}).
-			Decode(&setting)
+func LoadSettings() (setting Setting, err error) {
+	ctx := context.Background()
+	if err = settingsColl.
+		FindOne(ctx, bson.M{"_id": id}).
+		Decode(&setting); errors.Is(err, mongo.ErrNoDocuments) {
+		_, err = settingsColl.InsertOne(ctx, bson.M{"_id": id})
+	}
+	return
 }
